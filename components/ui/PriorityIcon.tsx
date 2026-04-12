@@ -1,0 +1,44 @@
+import clsx from "clsx";
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Minus,
+  type LucideIcon,
+} from "lucide-react";
+import type { TaskPriority } from "@/types";
+
+const ICONS: Record<TaskPriority, LucideIcon> = {
+  low: ArrowDown,
+  medium: Minus,
+  high: ArrowUp,
+  urgent: AlertTriangle,
+};
+
+const COLORS: Record<TaskPriority, string> = {
+  low: "text-slate-500",
+  medium: "text-blue-500",
+  high: "text-orange-500",
+  urgent: "text-red-500",
+};
+
+export type PriorityIconProps = {
+  priority: TaskPriority;
+  className?: string;
+  size?: number;
+};
+
+export function PriorityIcon({
+  priority,
+  className,
+  size = 18,
+}: PriorityIconProps) {
+  const Icon = ICONS[priority];
+  return (
+    <Icon
+      className={clsx(COLORS[priority], className)}
+      size={size}
+      aria-hidden
+    />
+  );
+}

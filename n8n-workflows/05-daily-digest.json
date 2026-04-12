@@ -1,0 +1,138 @@
+{
+  "name": "TaskFlow 05 — daily digest (9am)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "id": "tf05-schedule",
+      "name": "EveryDay9am"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.NEXT_PUBLIC_APP_URL }}/api/users",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "x-n8n-secret", "value": "={{ $env.N8N_SECRET }}" }]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 300],
+      "id": "tf05-users",
+      "name": "FetchUsers"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const raw = $input.first().json;\nconst arr = raw.data ?? raw.body?.data ?? [];\nif (!Array.isArray(arr)) return [];\nreturn arr\n  .filter((u) => typeof u.telegramId === 'number')\n  .map((u) => ({ json: u }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "id": "tf05-split",
+      "name": "UsersToItems"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NEXT_PUBLIC_APP_URL }}/api/internal/task-summary",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "x-n8n-secret", "value": "={{ $env.N8N_SECRET }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ telegramId: $json.telegramId }) }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "id": "tf05-summary",
+      "name": "TaskSummary"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.data.totalOpen }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [960, 300],
+      "id": "tf05-if-open",
+      "name": "HasOpenTasks"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const summary = $json.data ?? $json.body?.data ?? $json;\nconst tid = $('UsersToItems').item.json.telegramId;\nconst name = summary.name ?? 'there';\nconst open = summary.totalOpen ?? 0;\nconst text = [\n  `Good morning ${name}!`,\n  `You have ${open} open tasks.`,\n  `Overdue: ${summary.overdue ?? 0} · Due today: ${summary.upcomingDueToday ?? 0}`\n].join('\\n');\nreturn { json: { chatId: tid, text } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 200],
+      "id": "tf05-format",
+      "name": "FormatDigest"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": { "appendAttribution": false }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1440, 200],
+      "id": "tf05-send",
+      "name": "SendDigest"
+    }
+  ],
+  "connections": {
+    "EveryDay9am": { "main": [[{ "node": "FetchUsers", "type": "main", "index": 0 }]] },
+    "FetchUsers": { "main": [[{ "node": "UsersToItems", "type": "main", "index": 0 }]] },
+    "UsersToItems": { "main": [[{ "node": "TaskSummary", "type": "main", "index": 0 }]] },
+    "TaskSummary": { "main": [[{ "node": "HasOpenTasks", "type": "main", "index": 0 }]] },
+    "HasOpenTasks": {
+      "main": [
+        [{ "node": "FormatDigest", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "FormatDigest": { "main": [[{ "node": "SendDigest", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "meta": { "templateCredsSetupCompleted": false },
+  "pinData": {},
+  "active": false,
+  "versionId": "00000000-0000-4000-8000-000000000005",
+  "id": "taskflow-wf-05-digest",
+  "tags": []
+}

@@ -1,0 +1,12 @@
+import mongoose, { Schema } from "mongoose";
+
+const CommentSchema = new Schema(
+  {
+    taskId: { type: Schema.Types.ObjectId, ref: "Task", required: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    text: { type: String, required: true },
+  },
+  { timestamps: true },
+);
+
+export default mongoose.models.Comment || mongoose.model("Comment", CommentSchema);

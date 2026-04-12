@@ -1,0 +1,446 @@
+"use client";
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import dayjs from "dayjs";
+import clsx from "clsx";
+import { useAppStore } from "@/lib/store";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  hideMainButton,
+  haptic,
+  setMainButton,
+} from "@/lib/tma";
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import type { TaskListTask } from "@/components/TaskCard";
+import type { ITask, TaskPriority, TaskStatus } from "@/types";
+
+type DeptRow = {
+  _id: string;
+  name: string;
+  path: string;
+  parentPath?: string;
+};
+
+type UserRow = {
+  _id: string;
+  name: string;
+  username?: string;
+  avatarUrl?: string;
+  role: string;
+  departmentPath: string;
+};
+
+const PRIORITIES: TaskPriority[] = ["low", "medium", "high", "urgent"];
+const STATUSES: TaskStatus[] = [
+  "todo",
+  "in_progress",
+  "review",
+  "done",
+];
+
+function toInputDate(d: string | Date | undefined): string {
+  if (!d) return "";
+  return dayjs(d).format("YYYY-MM-DD");
+}
+
+function useRefLatest<T>(value: T) {
+  const r = useRef(value);
+  r.current = value;
+  return r;
+}
+
+export type CreateTaskSheetProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreated?: (task: TaskListTask) => void;
+  onUpdated?: () => void;
+  editTask?: ITask;
+};
+
+export function CreateTaskSheet({
+  isOpen,
+  onClose,
+  onCreated,
+  onUpdated,
+  editTask,
+}: CreateTaskSheetProps) {
+  const token = useAppStore((s) => s.token);
+  const { user } = useAuth();
+  const isEdit = !!editTask;
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [status, setStatus] = useState<TaskStatus>("todo");
+  const [assigneeId, setAssigneeId] = useState("");
+  const [departmentPath, setDepartmentPath] = useState("");
+  const [dueStr, setDueStr] = useState("");
+  const [userQuery, setUserQuery] = useState("");
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [departments, setDepartments] = useState<DeptRow[]>([]);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [submitErr, setSubmitErr] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const resetFromProps = useCallback(() => {
+    if (editTask) {
+      setTitle(editTask.title);
+      setDescription(editTask.description ?? "");
+      setPriority(editTask.priority);
+      setStatus(editTask.status);
+      setAssigneeId(editTask.assigneeId || "");
+      setDepartmentPath(editTask.departmentPath);
+      setDueStr(toInputDate(editTask.dueDate));
+    } else if (user) {
+      setTitle("");
+      setDescription("");
+      setPriority("medium");
+      setStatus("todo");
+      setAssigneeId(user._id);
+      setDepartmentPath(user.departmentPath || "");
+      setDueStr("");
+    }
+    setUserQuery("");
+    setLoadErr(null);
+    setSubmitErr(null);
+  }, [editTask, user]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    resetFromProps();
+  }, [isOpen, resetFromProps]);
+
+  useEffect(() => {
+    if (!isOpen || !token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [uRes, dRes] = await Promise.all([
+          fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/departments", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        const uJson = (await uRes.json()) as {
+          success?: boolean;
+          data?: UserRow[];
+        };
+        const dJson = (await dRes.json()) as {
+          success?: boolean;
+          data?: DeptRow[];
+        };
+        if (cancelled) return;
+        if (uRes.ok && uJson.success !== false) {
+          setUsers(uJson.data ?? []);
+        }
+        if (dRes.ok && dJson.success !== false) {
+          setDepartments(dJson.data ?? []);
+        }
+      } catch {
+        if (!cancelled) setLoadErr("Could not load lists");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, token]);
+
+  const filteredUsers = useMemo(() => {
+    const q = userQuery.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        (u.username && u.username.toLowerCase().includes(q)),
+    );
+  }, [users, userQuery]);
+
+  const submit = useCallback(async () => {
+    if (!token) return;
+    setSubmitErr(null);
+    if (!title.trim()) {
+      setSubmitErr("Title is required");
+      return;
+    }
+    if (!isEdit && !departmentPath.trim()) {
+      setSubmitErr("Department is required");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      if (isEdit && editTask) {
+        const body: Record<string, unknown> = {
+          title: title.trim(),
+          description,
+          priority,
+          status,
+          assigneeId: assigneeId || null,
+        };
+        if (dueStr) {
+          body.dueDate = new Date(dueStr + "T12:00:00").toISOString();
+        } else {
+          body.dueDate = null;
+        }
+        const res = await fetch(`/api/tasks/${editTask._id}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+        const json = (await res.json()) as { success?: boolean; error?: string };
+        if (!res.ok || json.success === false) {
+          throw new Error(json.error || "Save failed");
+        }
+        onUpdated?.();
+        onClose();
+        hideMainButton();
+        haptic("success");
+        return;
+      }
+
+      const body: Record<string, unknown> = {
+        title: title.trim(),
+        departmentPath: departmentPath.trim(),
+        priority,
+        description: description || undefined,
+      };
+      if (assigneeId) body.assigneeId = assigneeId;
+      if (dueStr) {
+        body.dueDate = new Date(dueStr + "T12:00:00").toISOString();
+      }
+
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      const json = (await res.json()) as {
+        success?: boolean;
+        data?: TaskListTask;
+        error?: string;
+      };
+      if (!res.ok || json.success === false || !json.data) {
+        throw new Error(json.error || "Create failed");
+      }
+      onCreated?.(json.data);
+      onClose();
+      hideMainButton();
+      haptic("success");
+    } catch (e) {
+      setSubmitErr(e instanceof Error ? e.message : "Request failed");
+      haptic("error");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    token,
+    title,
+    description,
+    priority,
+    status,
+    assigneeId,
+    departmentPath,
+    dueStr,
+    isEdit,
+    editTask,
+    onCreated,
+    onUpdated,
+    onClose,
+  ]);
+
+  const submitRef = useRefLatest(submit);
+  useEffect(() => {
+    if (!isOpen) {
+      hideMainButton();
+      return;
+    }
+    const label = isEdit ? "Save Task" : "Create Task";
+    setMainButton(label, () => {
+      void submitRef.current();
+    });
+    return () => {
+      hideMainButton();
+    };
+  }, [isOpen, isEdit]);
+
+  return (
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={() => {
+        hideMainButton();
+        onClose();
+      }}
+      title={isEdit ? "Edit task" : "New task"}
+    >
+      <div className="space-y-4 pb-2">
+        {loadErr ? (
+          <p className="text-xs text-amber-600">{loadErr}</p>
+        ) : null}
+        {submitErr ? (
+          <p className="text-xs text-red-500">{submitErr}</p>
+        ) : null}
+
+        <label className="block text-xs font-medium text-[var(--tg-hint)]">
+          Title
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="mt-1 min-h-[44px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm text-[var(--tg-text)] dark:border-white/10"
+          />
+        </label>
+
+        <div>
+          <p className="mb-1 text-xs font-medium text-[var(--tg-hint)]">
+            Priority
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {PRIORITIES.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPriority(p)}
+                className={clsx(
+                  "min-h-[44px] rounded-lg px-2 text-sm font-medium capitalize",
+                  priority === p
+                    ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
+                    : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+                )}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isEdit ? (
+          <div>
+            <p className="mb-1 text-xs font-medium text-[var(--tg-hint)]">
+              Status
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {STATUSES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatus(s)}
+                  className={clsx(
+                    "min-h-[44px] rounded-lg px-1 text-xs font-medium",
+                    status === s
+                      ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
+                      : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+                  )}
+                >
+                  {s.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {!isEdit ? (
+          <label className="block text-xs font-medium text-[var(--tg-hint)]">
+            Department
+            <select
+              value={departmentPath}
+              onChange={(e) => setDepartmentPath(e.target.value)}
+              className="mt-1 min-h-[44px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-2 text-sm dark:border-white/10"
+            >
+              <option value="">Select department</option>
+              {departments.map((d) => (
+                <option key={d._id} value={d.path}>
+                  {d.name} ({d.path})
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <p className="text-xs text-[var(--tg-hint)]">
+            Department:{" "}
+            <span className="text-[var(--tg-text)]">
+              {editTask?.departmentPath}
+            </span>
+          </p>
+        )}
+
+        <div>
+          <p className="mb-1 text-xs font-medium text-[var(--tg-hint)]">
+            Assignee
+          </p>
+          <input
+            value={userQuery}
+            onChange={(e) => setUserQuery(e.target.value)}
+            placeholder="Search users…"
+            className="mb-2 min-h-[40px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm dark:border-white/10"
+          />
+          <div className="max-h-36 overflow-y-auto rounded-lg border border-black/5 dark:border-white/10">
+            {filteredUsers.map((u) => (
+              <button
+                key={u._id}
+                type="button"
+                onClick={() => {
+                  setAssigneeId(u._id);
+                  setUserQuery("");
+                  haptic("light");
+                }}
+                className={clsx(
+                  "flex w-full min-h-[44px] items-center px-3 py-2 text-left text-sm",
+                  assigneeId === u._id
+                    ? "bg-[var(--tg-button)]/20"
+                    : "active:bg-[var(--tg-secondary-bg)]",
+                )}
+              >
+                {u.name}
+                {u.username ? (
+                  <span className="ml-2 text-xs text-[var(--tg-hint)]">
+                    @{u.username}
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+          {assigneeId ? (
+            <p className="mt-1 text-xs text-[var(--tg-hint)]">
+              Selected:{" "}
+              {users.find((u) => u._id === assigneeId)?.name ?? assigneeId}
+            </p>
+          ) : null}
+        </div>
+
+        <label className="block text-xs font-medium text-[var(--tg-hint)]">
+          Due date
+          <input
+            type="date"
+            value={dueStr}
+            onChange={(e) => setDueStr(e.target.value)}
+            className="mt-1 min-h-[44px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-2 text-sm dark:border-white/10"
+          />
+        </label>
+
+        <label className="block text-xs font-medium text-[var(--tg-hint)]">
+          Description
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            className="mt-1 w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 py-2 text-sm dark:border-white/10"
+          />
+        </label>
+
+        {submitting ? (
+          <p className="text-center text-xs text-[var(--tg-hint)]">Saving…</p>
+        ) : null}
+      </div>
+    </BottomSheet>
+  );
+}
