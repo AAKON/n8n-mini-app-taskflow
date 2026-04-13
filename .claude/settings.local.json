@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/h/**)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

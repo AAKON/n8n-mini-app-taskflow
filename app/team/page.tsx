@@ -1,7 +1,7 @@
 "use client";
 
-import { TaskHome } from "@/components/TaskHome";
+import { TeamPage } from "@/components/TeamPage";
 
-export default function TeamPage() {
-  return <TaskHome initialTab="team" />;
+export default function TeamRoute() {
+  return <TeamPage />;
 }

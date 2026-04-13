@@ -137,7 +137,16 @@ export function CreateTaskSheet({
         };
         if (cancelled) return;
         if (uRes.ok && uJson.success !== false) {
-          setUsers(uJson.data ?? []);
+          const loadedUsers = uJson.data ?? [];
+          setUsers(loadedUsers);
+          // Populate the input with the selected assignee's name once users load
+          setAssigneeId((prev) => {
+            if (prev) {
+              const match = loadedUsers.find((u) => u._id === prev);
+              if (match) setUserQuery(match.name);
+            }
+            return prev;
+          });
         }
         if (dRes.ok && dJson.success !== false) {
           setDepartments(dJson.data ?? []);
@@ -151,15 +160,36 @@ export function CreateTaskSheet({
     };
   }, [isOpen, token]);
 
+  // When department changes, clear the assignee so an invalid user isn't kept
+  useEffect(() => {
+    if (!departmentPath) return;
+    setAssigneeId((prev) => {
+      if (!prev) return prev;
+      const selected = users.find((u) => u._id === prev);
+      if (!selected) return prev;
+      const inDept = selected.departmentPath === departmentPath ||
+        selected.departmentPath.startsWith(departmentPath + ".");
+      return inDept ? prev : "";
+    });
+  }, [departmentPath, users]);
+
   const filteredUsers = useMemo(() => {
     const q = userQuery.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(
+    // Scope list to selected department (and its sub-departments)
+    const deptUsers = departmentPath
+      ? users.filter(
+          (u) =>
+            u.departmentPath === departmentPath ||
+            u.departmentPath.startsWith(departmentPath + "."),
+        )
+      : users;
+    if (!q) return deptUsers;
+    return deptUsers.filter(
       (u) =>
         u.name.toLowerCase().includes(q) ||
         (u.username && u.username.toLowerCase().includes(q)),
     );
-  }, [users, userQuery]);
+  }, [users, userQuery, departmentPath]);
 
   const submit = useCallback(async () => {
     if (!token) return;
@@ -353,7 +383,11 @@ export function CreateTaskSheet({
             Department
             <select
               value={departmentPath}
-              onChange={(e) => setDepartmentPath(e.target.value)}
+              onChange={(e) => {
+                setDepartmentPath(e.target.value);
+                setAssigneeId("");
+                setUserQuery("");
+              }}
               className="mt-1 min-h-[44px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-2 text-sm dark:border-white/10"
             >
               <option value="">Select department</option>
@@ -377,44 +411,69 @@ export function CreateTaskSheet({
           <p className="mb-1 text-xs font-medium text-[var(--tg-hint)]">
             Assignee
           </p>
-          <input
-            value={userQuery}
-            onChange={(e) => setUserQuery(e.target.value)}
-            placeholder="Search users…"
-            className="mb-2 min-h-[40px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm dark:border-white/10"
-          />
-          <div className="max-h-36 overflow-y-auto rounded-lg border border-black/5 dark:border-white/10">
-            {filteredUsers.map((u) => (
-              <button
-                key={u._id}
-                type="button"
-                onClick={() => {
-                  setAssigneeId(u._id);
-                  setUserQuery("");
-                  haptic("light");
-                }}
-                className={clsx(
-                  "flex w-full min-h-[44px] items-center px-3 py-2 text-left text-sm",
-                  assigneeId === u._id
-                    ? "bg-[var(--tg-button)]/20"
-                    : "active:bg-[var(--tg-secondary-bg)]",
-                )}
-              >
-                {u.name}
-                {u.username ? (
-                  <span className="ml-2 text-xs text-[var(--tg-hint)]">
-                    @{u.username}
-                  </span>
+
+          {/* Search / selected-name input */}
+          {(() => {
+            const selectedUser = users.find((u) => u._id === assigneeId);
+            const isSearching =
+              departmentPath &&
+              (!assigneeId || userQuery !== (selectedUser?.name ?? ""));
+            return (
+              <>
+                <input
+                  value={userQuery}
+                  onChange={(e) => {
+                    setUserQuery(e.target.value);
+                    if (assigneeId) setAssigneeId("");
+                  }}
+                  placeholder={
+                    !departmentPath
+                      ? "Select a department first"
+                      : `Search in ${departmentPath}…`
+                  }
+                  disabled={!departmentPath}
+                  className="mb-2 min-h-[44px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm dark:border-white/10 disabled:opacity-50"
+                />
+
+                {/* Dropdown — visible while actively searching */}
+                {isSearching ? (
+                  <div
+                    className="max-h-44 touch-pan-y overflow-y-auto overscroll-contain rounded-lg border border-black/10 dark:border-white/10"
+                  >
+                    {filteredUsers.length === 0 ? (
+                      <p className="px-3 py-3 text-sm text-[var(--tg-hint)]">
+                        No users found
+                      </p>
+                    ) : (
+                      filteredUsers.map((u) => (
+                        <button
+                          key={u._id}
+                          type="button"
+                          onPointerDown={(e) => {
+                            // stop only if not a scroll gesture (minimal movement)
+                            e.stopPropagation();
+                          }}
+                          onClick={() => {
+                            setAssigneeId(u._id);
+                            setUserQuery(u.name);
+                            haptic("light");
+                          }}
+                          className="flex w-full min-h-[44px] items-center px-3 py-2 text-left text-sm active:bg-[var(--tg-secondary-bg)]"
+                        >
+                          {u.name}
+                          {u.username ? (
+                            <span className="ml-2 text-xs text-[var(--tg-hint)]">
+                              @{u.username}
+                            </span>
+                          ) : null}
+                        </button>
+                      ))
+                    )}
+                  </div>
                 ) : null}
-              </button>
-            ))}
-          </div>
-          {assigneeId ? (
-            <p className="mt-1 text-xs text-[var(--tg-hint)]">
-              Selected:{" "}
-              {users.find((u) => u._id === assigneeId)?.name ?? assigneeId}
-            </p>
-          ) : null}
+              </>
+            );
+          })()}
         </div>
 
         <label className="block text-xs font-medium text-[var(--tg-hint)]">

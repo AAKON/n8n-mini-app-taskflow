@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  useCallback,
   useEffect,
   useId,
   useRef,
@@ -42,18 +41,22 @@ export function BottomSheet({
     setMounted(true);
   }, []);
 
-  const trapFocus = useCallback(
-    (e: KeyboardEvent) => {
-      if (!isOpen || !sheetRef.current) return;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!sheetRef.current) return;
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab") return;
-      const root = sheetRef.current;
       const nodes = Array.from(
-        root.querySelectorAll<HTMLElement>(FOCUSABLE),
+        sheetRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
       ).filter((el) => !el.hasAttribute("disabled"));
       if (nodes.length === 0) return;
       const first = nodes[0]!;
@@ -67,23 +70,13 @@ export function BottomSheet({
         e.preventDefault();
         first.focus();
       }
-    },
-    [isOpen, onClose],
-  );
-
-  useEffect(() => {
-    if (!isOpen) return;
-    document.addEventListener("keydown", trapFocus);
-    const t = window.setTimeout(() => {
-      const root = sheetRef.current;
-      const first = root?.querySelector<HTMLElement>(FOCUSABLE);
-      first?.focus();
-    }, 0);
-    return () => {
-      document.removeEventListener("keydown", trapFocus);
-      window.clearTimeout(t);
     };
-  }, [isOpen, trapFocus]);
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
 
   const onPointerDownHandle = (e: ReactPointerEvent) => {
     if (e.button !== 0) return;

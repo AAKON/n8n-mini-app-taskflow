@@ -1,8 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import clsx from "clsx";
 import dayjs from "dayjs";
+import {
+  Calendar,
+  Building2,
+  User,
+  AlignLeft,
+  MessageCircle,
+  Pencil,
+  Send,
+} from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { hasRole } from "@/lib/rbac";
@@ -52,6 +62,20 @@ type CommentRow = {
   } | null;
 };
 
+const STATUS_TABS: { value: TaskStatus; label: string }[] = [
+  { value: "todo", label: "To Do" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "review", label: "Review" },
+  { value: "done", label: "Done" },
+];
+
+const PRIORITY_ACCENT: Record<TaskPriority, string> = {
+  urgent: "border-l-red-500",
+  high: "border-l-orange-500",
+  medium: "border-l-blue-400",
+  low: "border-l-slate-300 dark:border-l-slate-600",
+};
+
 function toITask(t: TaskDetailModel): ITask {
   return {
     _id: t._id,
@@ -81,34 +105,43 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-
   const [commentText, setCommentText] = useState("");
   const [commentSending, setCommentSending] = useState(false);
 
   const canEdit = user ? hasRole(user.role, "manager") : false;
+  const canEditSteps = canEdit || (!!user && !!task && user._id === task.assigneeId);
+  const canChangeStatus = canEdit || (!!user && !!task && user._id === task.assigneeId);
+
+  const taskRef = useRef(task);
+  taskRef.current = task;
+
+  const updateTaskStatus = useCallback(async (newStatus: TaskStatus) => {
+    if (!token) return;
+    setTask((prev) => (prev ? { ...prev, status: newStatus } : null));
+    haptic("light");
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch {
+      haptic("error");
+    }
+  }, [token, taskId]);
 
   const loadTask = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    if (!token) { setLoading(false); return; }
     setLoading(true);
     setLoadError(null);
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = (await res.json()) as {
-        success?: boolean;
-        data?: TaskDetailModel;
-        error?: string;
-      };
-      if (!res.ok || json.success === false || !json.data) {
-        throw new Error(json.error || "Could not load task");
-      }
-      const t = json.data;
-      setTask(t);
-      document.title = `${t.title} · TaskFlow`;
+      const json = (await res.json()) as { success?: boolean; data?: TaskDetailModel; error?: string };
+      if (!res.ok || json.success === false || !json.data) throw new Error(json.error || "Could not load task");
+      setTask(json.data);
+      document.title = `${json.data.title} · TaskFlow`;
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Error");
       setTask(null);
@@ -123,39 +156,33 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       const res = await fetch(`/api/tasks/${taskId}/comments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = (await res.json()) as {
-        success?: boolean;
-        data?: CommentRow[];
-        error?: string;
-      };
-      if (!res.ok || json.success === false) {
-        throw new Error(json.error || "Comments failed");
-      }
+      const json = (await res.json()) as { success?: boolean; data?: CommentRow[]; error?: string };
+      if (!res.ok || json.success === false) throw new Error(json.error || "Comments failed");
       setComments(json.data ?? []);
     } catch {
       setComments([]);
     }
   }, [token, taskId]);
 
-  useEffect(() => {
-    void loadTask();
-  }, [loadTask]);
-
-  useEffect(() => {
-    if (task) void loadComments();
-  }, [task, loadComments]);
-
+  useEffect(() => { void loadTask(); }, [loadTask]);
+  useEffect(() => { if (task) void loadComments(); }, [task, loadComments]);
   useEffect(() => {
     showBackButton(() => router.push("/"));
-    return () => {
-      hideBackButton();
-      document.title = "TaskFlow";
-    };
+    return () => { hideBackButton(); document.title = "TaskFlow"; };
   }, [router]);
 
-  const onStepsChange = useCallback((steps: IStep[]) => {
-    setTask((prev) => (prev ? { ...prev, steps } : null));
-  }, []);
+  const onStepsChange = useCallback((newSteps: IStep[]) => {
+    setTask((prev) => (prev ? { ...prev, steps: newSteps } : null));
+    const current = taskRef.current;
+    if (!current) return;
+    const allDone = newSteps.length > 0 && newSteps.every((s) => s.done);
+    const anyDone = newSteps.some((s) => s.done);
+    if (allDone && current.status !== "done" && current.status !== "review") {
+      void updateTaskStatus("review");
+    } else if (anyDone && current.status === "todo") {
+      void updateTaskStatus("in_progress");
+    }
+  }, [updateTaskStatus]);
 
   const sendComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,12 +194,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       _id: tempId,
       text,
       createdAt: new Date().toISOString(),
-      user: {
-        _id: user._id,
-        name: user.name,
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-      },
+      user: { _id: user._id, name: user.name, username: user.username, avatarUrl: user.avatarUrl },
     };
     setComments((c) => [...c, optimistic]);
     setCommentText("");
@@ -180,23 +202,12 @@ export function TaskDetail({ taskId }: { taskId: string }) {
     try {
       const res = await fetch(`/api/tasks/${taskId}/comments`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      const json = (await res.json()) as {
-        success?: boolean;
-        data?: CommentRow;
-        error?: string;
-      };
-      if (!res.ok || json.success === false || !json.data) {
-        throw new Error(json.error || "Failed");
-      }
-      setComments((c) =>
-        c.map((row) => (row._id === tempId ? json.data! : row)),
-      );
+      const json = (await res.json()) as { success?: boolean; data?: CommentRow; error?: string };
+      if (!res.ok || json.success === false || !json.data) throw new Error(json.error || "Failed");
+      setComments((c) => c.map((row) => (row._id === tempId ? json.data! : row)));
     } catch {
       setComments((c) => c.filter((row) => row._id !== tempId));
       setCommentText(text);
@@ -206,26 +217,14 @@ export function TaskDetail({ taskId }: { taskId: string }) {
     }
   };
 
-  if (!token || !user) {
-    return <SignInNotice />;
-  }
-
-  if (loading && !task) {
-    return <TaskDetailSkeleton />;
-  }
-
+  if (!token || !user) return <SignInNotice />;
+  if (loading && !task) return <TaskDetailSkeleton />;
   if (loadError || !task) {
     return (
       <div className="min-h-screen bg-[var(--tg-bg)] p-4 text-[var(--tg-text)]">
         <p className="text-sm text-red-500">{loadError ?? "Not found"}</p>
-        <button
-          type="button"
-          className="mt-4 min-h-[44px] text-[var(--tg-link)]"
-          onClick={() => {
-            haptic("light");
-            router.push("/");
-          }}
-        >
+        <button type="button" className="mt-4 min-h-[44px] text-[var(--tg-link)]"
+          onClick={() => { haptic("light"); router.push("/"); }}>
           Back to tasks
         </button>
       </div>
@@ -233,132 +232,209 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   }
 
   const assigneeUser = task.assignee
-    ? {
-        _id: task.assignee._id,
-        name: task.assignee.name ?? "?",
-        username: task.assignee.username,
-        avatarUrl: task.assignee.avatarUrl,
-      }
+    ? { _id: task.assignee._id, name: task.assignee.name ?? "?", username: task.assignee.username, avatarUrl: task.assignee.avatarUrl }
     : task.assigneeId
       ? { _id: task.assigneeId, name: "Assignee" }
       : { _id: "none", name: "Unassigned" };
 
-  const dueLabel = task.dueDate
-    ? dayjs(task.dueDate).format("MMM D, YYYY")
-    : "No due date";
+  const isOverdue = task.dueDate && task.status !== "done" && dayjs(task.dueDate).isBefore(dayjs().startOf("day"));
 
   return (
-    <div className="min-h-screen bg-[var(--tg-bg)] pb-32 text-[var(--tg-text)]">
-      <header className="sticky top-0 z-20 border-b border-black/5 bg-[var(--tg-bg)]/95 px-4 pb-3 pt-2 backdrop-blur dark:border-white/10">
+    <div className={clsx(
+      "min-h-screen bg-[var(--tg-bg)] pb-32 text-[var(--tg-text)]",
+    )}>
+      {/* Header */}
+      <header className={clsx(
+        "sticky top-0 z-20 border-b-4 bg-[var(--tg-bg)]/95 px-4 pb-3 pt-3 backdrop-blur",
+        PRIORITY_ACCENT[task.priority],
+      )}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold leading-tight">{task.title}</h1>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mb-1.5 flex flex-wrap gap-1.5">
               <Badge status={task.status} />
               <Badge priority={task.priority} />
             </div>
+            <h1 className="text-xl font-bold leading-tight">{task.title}</h1>
           </div>
           {canEdit ? (
             <button
               type="button"
-              onClick={() => {
-                haptic("light");
-                setEditSheetOpen(true);
-              }}
-              className="shrink-0 rounded-lg bg-[var(--tg-secondary-bg)] px-3 py-2 text-sm font-medium text-[var(--tg-text)] min-h-[44px]"
+              onClick={() => { haptic("light"); setEditSheetOpen(true); }}
+              className="shrink-0 flex items-center gap-1.5 rounded-xl bg-[var(--tg-secondary-bg)] px-3 py-2 text-sm font-medium text-[var(--tg-text)] min-h-[44px]"
             >
+              <Pencil className="h-3.5 w-3.5" />
               Edit
             </button>
           ) : null}
         </div>
       </header>
 
-      <div className="space-y-6 px-4 py-4">
-        <section className="flex flex-wrap items-center gap-3 border-b border-black/5 pb-4 dark:border-white/10">
-          <div className="flex min-h-[44px] items-center gap-2">
-            <Avatar user={assigneeUser} size="md" />
-            <div>
-              <p className="text-sm font-medium">{assigneeUser.name}</p>
-              {task.assignee?.username ? (
-                <p className="text-xs text-[var(--tg-hint)]">
-                  @{task.assignee.username}
-                </p>
-              ) : null}
+      {/* Status stepper */}
+      {canChangeStatus ? (
+        <div className="flex gap-1.5 border-b border-black/5 px-4 py-3 dark:border-white/10">
+          {STATUS_TABS.map((s, i) => {
+            const statuses: TaskStatus[] = ["todo", "in_progress", "review", "done"];
+            const currentIdx = statuses.indexOf(task.status);
+            const isActive = task.status === s.value;
+            const isPast = statuses.indexOf(s.value) < currentIdx;
+            return (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => { if (!isActive) void updateTaskStatus(s.value); }}
+                className={clsx(
+                  "flex-1 rounded-xl py-2 text-xs font-semibold transition-colors",
+                  isActive
+                    ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
+                    : isPast
+                      ? "bg-[var(--tg-button)]/20 text-[var(--tg-button)]"
+                      : "bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)]",
+                )}
+              >
+                {i + 1}. {s.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <div className="space-y-5 px-4 py-4">
+        {/* Metadata card */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-2.5 rounded-2xl bg-[var(--tg-secondary-bg)] p-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--tg-bg)]">
+              <User className="h-4 w-4 text-[var(--tg-hint)]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">Assignee</p>
+              <div className="flex items-center gap-1.5">
+                <Avatar user={assigneeUser} size="sm" />
+                <p className="truncate text-xs font-medium">{assigneeUser.name}</p>
+              </div>
             </div>
           </div>
-          <div className="text-sm">
-            <span className="text-[var(--tg-hint)]">Due </span>
-            {dueLabel}
-          </div>
-          <div className="w-full text-xs text-[var(--tg-hint)]">
-            {task.departmentPath}
-          </div>
-        </section>
 
+          <div className="flex items-center gap-2.5 rounded-2xl bg-[var(--tg-secondary-bg)] p-3">
+            <div className={clsx(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+              isOverdue ? "bg-red-100 dark:bg-red-900/30" : "bg-[var(--tg-bg)]",
+            )}>
+              <Calendar className={clsx("h-4 w-4", isOverdue ? "text-red-500" : "text-[var(--tg-hint)]")} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">Due date</p>
+              <p className={clsx("text-xs font-medium", isOverdue ? "text-red-500" : "")}>
+                {task.dueDate ? dayjs(task.dueDate).format("MMM D, YYYY") : "Not set"}
+              </p>
+              {isOverdue ? <p className="text-[10px] text-red-400">Overdue</p> : null}
+            </div>
+          </div>
+
+          <div className="col-span-2 flex items-center gap-2.5 rounded-2xl bg-[var(--tg-secondary-bg)] p-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--tg-bg)]">
+              <Building2 className="h-4 w-4 text-[var(--tg-hint)]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">Department</p>
+              <p className="truncate text-xs font-medium">{task.departmentPath}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Description */}
         <section>
-          <h3 className="mb-2 text-sm font-semibold">Description</h3>
-          <p className="whitespace-pre-wrap text-sm text-[var(--tg-text)]">
-            {task.description?.trim() ? task.description : "No description."}
+          <div className="mb-2 flex items-center gap-2">
+            <AlignLeft className="h-4 w-4 text-[var(--tg-hint)]" />
+            <h3 className="text-sm font-semibold">Description</h3>
+          </div>
+          <p className={clsx(
+            "whitespace-pre-wrap rounded-2xl p-3 text-sm leading-relaxed",
+            "bg-[var(--tg-secondary-bg)]",
+            !task.description?.trim() && "text-[var(--tg-hint)] italic",
+          )}>
+            {task.description?.trim() || "No description."}
           </p>
         </section>
 
+        {/* Steps */}
         <StepList
           taskId={taskId}
           steps={task.steps}
-          canEdit={canEdit}
+          canEdit={canEditSteps}
           token={token}
           onStepsChange={onStepsChange}
         />
 
-        <section className="space-y-3 border-t border-black/5 pt-4 dark:border-white/10">
-          <h3 className="text-sm font-semibold">Comments</h3>
-          <ul className="space-y-4">
-            {comments.map((c) => (
-              <li key={c._id} className="flex gap-2">
-                <Avatar
-                  user={{
-                    _id: c.user?._id ?? "?",
-                    name: c.user?.name ?? "?",
-                    username: c.user?.username,
-                    avatarUrl: c.user?.avatarUrl,
-                  }}
-                  size="sm"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="text-sm font-medium">
-                      {c.user?.name ?? "Unknown"}
-                    </span>
-                    <time
-                      className="text-xs text-[var(--tg-hint)]"
-                      dateTime={c.createdAt}
-                    >
-                      {dayjs(c.createdAt).format("MMM D, h:mm a")}
-                    </time>
+        {/* Tags */}
+        {task.tags?.length > 0 ? (
+          <section>
+            <div className="flex flex-wrap gap-1.5">
+              {task.tags.map((tag) => (
+                <span key={tag} className="rounded-full bg-[var(--tg-secondary-bg)] px-2.5 py-0.5 text-xs text-[var(--tg-hint)]">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* Comments */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4 text-[var(--tg-hint)]" />
+            <h3 className="text-sm font-semibold">Comments</h3>
+            {comments.length > 0 ? (
+              <span className="ml-auto rounded-full bg-[var(--tg-secondary-bg)] px-2 py-0.5 text-xs text-[var(--tg-hint)]">
+                {comments.length}
+              </span>
+            ) : null}
+          </div>
+
+          {comments.length > 0 ? (
+            <ul className="space-y-3">
+              {comments.map((c) => (
+                <li key={c._id} className="flex gap-2.5">
+                  <Avatar
+                    user={{ _id: c.user?._id ?? "?", name: c.user?.name ?? "?", username: c.user?.username, avatarUrl: c.user?.avatarUrl }}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1 rounded-2xl rounded-tl-sm bg-[var(--tg-secondary-bg)] px-3 py-2.5">
+                    <div className="mb-1 flex flex-wrap items-baseline gap-2">
+                      <span className="text-xs font-semibold">{c.user?.name ?? "Unknown"}</span>
+                      <time className="text-[10px] text-[var(--tg-hint)]" dateTime={c.createdAt}>
+                        {dayjs(c.createdAt).format("MMM D, h:mm a")}
+                      </time>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{c.text}</p>
                   </div>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--tg-text)]">
-                    {c.text}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <form onSubmit={sendComment} className="flex gap-2 pt-2">
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm italic text-[var(--tg-hint)]">No comments yet.</p>
+          )}
+
+          <form onSubmit={sendComment} className="flex gap-2">
             <input
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Write a comment…"
-              className="min-h-[44px] flex-1 rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm dark:border-white/10"
+              className="min-h-[44px] flex-1 rounded-2xl border border-black/10 bg-[var(--tg-secondary-bg)] px-4 text-sm dark:border-white/10"
             />
             <button
               type="submit"
               disabled={commentSending || !commentText.trim()}
-              className="min-h-[44px] shrink-0 rounded-lg bg-[var(--tg-button)] px-4 text-sm font-medium text-[var(--tg-button-text)] disabled:opacity-50"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--tg-button)] text-[var(--tg-button-text)] disabled:opacity-40"
             >
-              Send
+              <Send className="h-4 w-4" />
             </button>
           </form>
         </section>
+
+        {/* Meta footer */}
+        <p className="text-center text-[10px] text-[var(--tg-hint)]">
+          Created {dayjs(task.createdAt).format("MMM D, YYYY")} · Updated {dayjs(task.updatedAt).format("MMM D")}
+        </p>
       </div>
 
       {task ? (
@@ -366,10 +442,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           isOpen={editSheetOpen}
           onClose={() => setEditSheetOpen(false)}
           editTask={toITask(task)}
-          onUpdated={() => {
-            setEditSheetOpen(false);
-            void loadTask();
-          }}
+          onUpdated={() => { setEditSheetOpen(false); void loadTask(); }}
         />
       ) : null}
     </div>

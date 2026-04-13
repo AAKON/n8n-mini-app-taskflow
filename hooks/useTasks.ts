@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { TaskListTask } from "@/components/TaskCard";
 import type { TaskStatus } from "@/types";
+import type { DueFilter } from "@/lib/task-filters";
 
 export type TaskTab = "my" | "team" | "all";
 
@@ -11,6 +12,8 @@ export type UseTasksFilters = {
   tab: TaskTab;
   status?: TaskStatus | "";
   userId: string;
+  dueFilter?: DueFilter;
+  departmentPath?: string;
 };
 
 type PaginatedPayload = {
@@ -45,9 +48,15 @@ export function useTasks(filters: UseTasksFilters) {
       if (filters.tab === "my") {
         params.set("assigneeId", filters.userId);
       }
+      if (filters.dueFilter) {
+        params.set("dueFilter", filters.dueFilter);
+      }
+      if (filters.departmentPath) {
+        params.set("departmentPath", filters.departmentPath);
+      }
       return `/api/tasks?${params.toString()}`;
     },
-    [filters.tab, filters.status, filters.userId],
+    [filters.tab, filters.status, filters.userId, filters.dueFilter, filters.departmentPath],
   );
 
   const fetchPage = useCallback(
@@ -128,6 +137,8 @@ export function useTasks(filters: UseTasksFilters) {
     filters.userId,
     filters.tab,
     filters.status,
+    filters.dueFilter,
+    filters.departmentPath,
     fetchPage,
   ]);
 

@@ -1,5 +1,43 @@
 import crypto from "crypto";
 
+export async function sendTaskAssignedMessage(params: {
+  assigneeTelegramId: number;
+  taskId: string;
+  taskTitle: string;
+  assignedByName: string;
+  dueDate?: Date | string | null;
+}): Promise<void> {
+  const token = process.env.BOT_TOKEN;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!token || !appUrl) return;
+
+  const due = params.dueDate
+    ? `\n📅 Due: ${new Date(params.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
+    : "";
+
+  const text = `📌 New task assigned by *${params.assignedByName}*:\n*${params.taskTitle}*${due}`;
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: params.assigneeTelegramId,
+      text,
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[
+          {
+            text: "Open Task",
+            web_app: { url: `${appUrl}/tasks/${params.taskId}` },
+          },
+        ]],
+      },
+    }),
+  }).catch(() => {
+    // never fail the API response if notification fails
+  });
+}
+
 export type ParsedTelegramUser = {
   id: number;
   first_name: string;
@@ -12,6 +50,39 @@ export type ParsedTelegramUser = {
  * Validates Telegram Web App initData per
  * https://core.telegram.org/bots/webapps#validating-data-received-via-the-web-app
  */
+export async function sendStatusChangedMessage(params: {
+  creatorTelegramId: number;
+  taskId: string;
+  taskTitle: string;
+  updatedByName: string;
+  from: string;
+  to: string;
+}): Promise<void> {
+  const token = process.env.BOT_TOKEN;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!token || !appUrl) return;
+
+  const statusLabel = (s: string) =>
+    s.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const text = `🔄 *${params.taskTitle}*\nStatus changed by *${params.updatedByName}*: ${statusLabel(params.from)} → ${statusLabel(params.to)}`;
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: params.creatorTelegramId,
+      text,
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "Open Task", web_app: { url: `${appUrl}/tasks/${params.taskId}` } },
+        ]],
+      },
+    }),
+  }).catch(() => {});
+}
+
 export function validateTelegramInitData(initData: string): boolean {
   const botToken = process.env.BOT_TOKEN;
   if (!botToken) return false;

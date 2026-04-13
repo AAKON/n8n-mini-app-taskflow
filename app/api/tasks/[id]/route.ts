@@ -1,8 +1,10 @@
 import { Types } from "mongoose";
 import Task from "@/models/Task";
+import User from "@/models/User";
 import Comment from "@/models/Comment";
 import ActivityLog from "@/models/ActivityLog";
 import { apiError, apiResponse, withAuth } from "@/lib/api-helpers";
+import { sendTaskAssignedMessage, sendStatusChangedMessage } from "@/lib/telegram";
 import {
   canAccessDepartment,
   canModifyTask,
@@ -204,6 +206,22 @@ export const PATCH = withAuth(async (req, user, ctx) => {
       action: "status_changed",
       meta: { from: prev.status, to: body.status },
     });
+
+    // Notify creator — skip if they're the one updating
+    const creatorId = String(prev.assignedById);
+    if (creatorId && creatorId !== user._id) {
+      const creator = await User.findById(creatorId).select("telegramId").lean() as { telegramId?: number } | null;
+      if (creator?.telegramId) {
+        void sendStatusChangedMessage({
+          creatorTelegramId: creator.telegramId,
+          taskId: id,
+          taskTitle: String(updated?.title ?? prev.title),
+          updatedByName: user.name,
+          from: prev.status,
+          to: body.status,
+        });
+      }
+    }
   }
 
   const prevAssignee = prev.assigneeId ? String(prev.assigneeId) : "";
@@ -224,6 +242,20 @@ export const PATCH = withAuth(async (req, user, ctx) => {
         to: nextAssignee || null,
       },
     });
+
+    // Notify new assignee via Telegram (fire-and-forget)
+    if (nextAssignee) {
+      const assigneeUser = await User.findById(nextAssignee).select("telegramId").lean() as { telegramId?: number } | null;
+      if (assigneeUser?.telegramId) {
+        void sendTaskAssignedMessage({
+          assigneeTelegramId: assigneeUser.telegramId,
+          taskId: id,
+          taskTitle: String(updated.title ?? ""),
+          assignedByName: user.name,
+          dueDate: updated.dueDate as Date | null,
+        });
+      }
+    }
   }
 
   return apiResponse(

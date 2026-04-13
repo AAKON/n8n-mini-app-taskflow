@@ -40,6 +40,7 @@ export function UserEditSheet({
   const token = useAppStore((s) => s.token);
   const { user: authUser } = useAuth();
 
+  const [name, setName] = useState("");
   const [role, setRole] = useState<Role>("member");
   const [departmentPath, setDepartmentPath] = useState("");
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -50,6 +51,7 @@ export function UserEditSheet({
 
   useEffect(() => {
     if (!user) return;
+    setName(user.name);
     setRole(user.role);
     setDepartmentPath(user.departmentPath ?? "");
     setErr(null);
@@ -85,9 +87,14 @@ export function UserEditSheet({
     setErr(null);
     setSubmitting(true);
     try {
+      if (!name.trim()) {
+        setErr("Name is required");
+        setSubmitting(false);
+        return;
+      }
       const body = isSelf
-        ? { departmentPath: departmentPath.trim() }
-        : { role, departmentPath: departmentPath.trim() };
+        ? { name: name.trim(), departmentPath: departmentPath.trim() }
+        : { name: name.trim(), role, departmentPath: departmentPath.trim() };
       const res = await fetch(`/api/users/${user._id}`, {
         method: "PATCH",
         headers: {
@@ -117,6 +124,7 @@ export function UserEditSheet({
   }, [
     token,
     user,
+    name,
     departmentPath,
     role,
     isSelf,
@@ -148,6 +156,15 @@ export function UserEditSheet({
       title={user ? `Edit ${user.name}` : "User"}
     >
       <div className="flex flex-col gap-3 pt-2">
+        <label className="flex flex-col gap-1 text-xs text-[var(--tg-hint)]">
+          Name
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="min-h-[44px] rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm text-[var(--tg-text)] dark:border-white/10"
+          />
+        </label>
+
         <label className="flex flex-col gap-1 text-xs text-[var(--tg-hint)]">
           Role
           <select

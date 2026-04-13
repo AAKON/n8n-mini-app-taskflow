@@ -23,9 +23,17 @@ export const PATCH = withAuth(async (req, user, ctx) => {
   const body = (await req.json()) as {
     role?: unknown;
     departmentPath?: unknown;
+    name?: unknown;
   };
 
-  const update: { role?: Role; departmentPath?: string } = {};
+  const update: { role?: Role; departmentPath?: string; name?: string } = {};
+
+  if (body.name !== undefined) {
+    if (typeof body.name !== "string" || !body.name.trim()) {
+      return apiError("name must be a non-empty string", 400);
+    }
+    update.name = body.name.trim();
+  }
 
   if (body.role !== undefined) {
     if (!isRole(body.role)) {

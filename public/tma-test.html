@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TMA Test</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; font-size: 14px; }
+    .ok { color: #0f0; } .fail { color: #f55; }
+  </style>
+</head>
+<body>
+  <h2>TMA Injection Test</h2>
+  <pre id="out">Checking...</pre>
+  <script>
+    const tg = window.Telegram?.WebApp;
+    const out = document.getElementById('out');
+    out.innerHTML = [
+      'window.Telegram:   ' + (window.Telegram ? '<span class="ok">YES</span>' : '<span class="fail">NO</span>'),
+      'WebApp:            ' + (tg ? '<span class="ok">YES</span>' : '<span class="fail">NO</span>'),
+      'initData length:   ' + (tg?.initData?.length ?? 0),
+      'platform:          ' + (tg?.platform ?? '(none)'),
+      'version:           ' + (tg?.version ?? '(none)'),
+      'initData:          ' + (tg?.initData?.slice(0, 100) ?? '(empty)'),
+    ].join('\n');
+
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+  </script>
+</body>
+</html>

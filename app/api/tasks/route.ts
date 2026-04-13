@@ -9,7 +9,8 @@ import {
   withAuth,
 } from "@/lib/api-helpers";
 import { hasRole } from "@/lib/rbac";
-import { buildTaskListFilter } from "@/lib/task-filters";
+import { buildTaskListFilter, type DueFilter } from "@/lib/task-filters";
+import { sendTaskAssignedMessage } from "@/lib/telegram";
 
 const STATUSES = new Set([
   "todo",
@@ -151,6 +152,9 @@ export const GET = withAuth(async (req, user) => {
   const priority = url.searchParams.get("priority");
   const assigneeId = url.searchParams.get("assigneeId");
   const departmentPath = url.searchParams.get("departmentPath");
+  const dueFilterRaw = url.searchParams.get("dueFilter");
+  const DUE_FILTERS = new Set(["overdue", "today", "week"]);
+  const dueFilter: DueFilter = DUE_FILTERS.has(dueFilterRaw ?? "") ? (dueFilterRaw as DueFilter) : null;
 
   if (status !== null && status !== "" && !STATUSES.has(status)) {
     return apiError("Invalid status", 400);
@@ -178,6 +182,7 @@ export const GET = withAuth(async (req, user) => {
     priority: priority || null,
     assigneeId: assigneeId || null,
     departmentPath,
+    dueFilter,
   });
 
   const farFuture = new Date(8640000000000000);
@@ -318,6 +323,20 @@ export const POST = withAuth(async (req, user) => {
     action: "created",
     meta: {},
   });
+
+  // Notify assignee via Telegram (fire-and-forget)
+  if (assignee) {
+    const assigneeUser = await User.findById(assignee).select("telegramId").lean() as { telegramId?: number } | null;
+    if (assigneeUser?.telegramId) {
+      void sendTaskAssignedMessage({
+        assigneeTelegramId: assigneeUser.telegramId,
+        taskId: String(task._id),
+        taskTitle: task.title,
+        assignedByName: user.name,
+        dueDate: dueDate,
+      });
+    }
+  }
 
   const created = await Task.findById(task._id).lean();
   if (!created) {

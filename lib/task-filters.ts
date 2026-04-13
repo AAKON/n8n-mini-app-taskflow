@@ -2,11 +2,14 @@ import { Types } from "mongoose";
 import { escapeRegex } from "@/lib/path-utils";
 import type { IUser } from "@/types";
 
+export type DueFilter = "overdue" | "today" | "week" | null;
+
 export type TaskListQuery = {
   status?: string | null;
   priority?: string | null;
   assigneeId?: string | null;
   departmentPath?: string | null;
+  dueFilter?: DueFilter;
 };
 
 /** Builds Mongo filter for GET /api/tasks (role + optional query filters). */
@@ -43,12 +46,31 @@ export function buildTaskListFilter(
   if (query.assigneeId && Types.ObjectId.isValid(query.assigneeId)) {
     clauses.push({ assigneeId: new Types.ObjectId(query.assigneeId) });
   }
-  if (
-    query.departmentPath !== null &&
-    query.departmentPath !== undefined &&
-    query.departmentPath !== ""
-  ) {
-    clauses.push({ departmentPath: query.departmentPath });
+  if (query.departmentPath) {
+    clauses.push({
+      $or: [
+        { departmentPath: query.departmentPath },
+        { departmentPath: { $regex: `^${escapeRegex(query.departmentPath)}\\.` } },
+      ],
+    });
+  }
+
+  if (query.dueFilter) {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(startOfDay.getTime() + 86_400_000 - 1);
+    const endOfWeek = new Date(startOfDay.getTime() + (7 - startOfDay.getDay()) * 86_400_000);
+
+    if (query.dueFilter === "overdue") {
+      clauses.push({
+        dueDate: { $exists: true, $ne: null, $lt: startOfDay },
+        status: { $ne: "done" },
+      });
+    } else if (query.dueFilter === "today") {
+      clauses.push({ dueDate: { $gte: startOfDay, $lte: endOfDay } });
+    } else if (query.dueFilter === "week") {
+      clauses.push({ dueDate: { $gte: startOfDay, $lte: endOfWeek } });
+    }
   }
 
   if (clauses.length === 0) {
