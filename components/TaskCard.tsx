@@ -17,10 +17,10 @@ export type TaskCardProps = {
 };
 
 const PRIORITY_ACCENT: Record<string, string> = {
-  urgent: "border-l-red-500",
-  high: "border-l-orange-500",
-  medium: "border-l-blue-400",
-  low: "border-l-slate-300 dark:border-l-slate-600",
+  urgent: "border-l-[var(--tone-danger)]",
+  high: "border-l-[var(--tone-warning)]",
+  medium: "border-l-[var(--tone-info)]",
+  low: "border-l-[var(--tg-border-strong)]",
 };
 
 const PRIORITY_LABEL: Record<string, string> = {
@@ -31,17 +31,17 @@ const PRIORITY_LABEL: Record<string, string> = {
 };
 
 const PRIORITY_TEXT: Record<string, string> = {
-  urgent: "text-red-500",
-  high: "text-orange-500",
-  medium: "text-blue-500",
-  low: "text-slate-400",
+  urgent: "text-[var(--tone-danger)]",
+  high: "text-[var(--tone-warning)]",
+  medium: "text-[var(--tone-info)]",
+  low: "text-[var(--tone-neutral)]",
 };
 
 const STATUS_META: Record<string, { label: string; pill: string; dot: string }> = {
-  todo: { label: "Todo", pill: "bg-zinc-500/10 text-zinc-600 dark:text-zinc-300", dot: "bg-zinc-400" },
-  in_progress: { label: "In progress", pill: "bg-sky-500/10 text-sky-700 dark:text-sky-300", dot: "bg-sky-500" },
-  review: { label: "Review", pill: "bg-amber-500/10 text-amber-700 dark:text-amber-300", dot: "bg-amber-500" },
-  done: { label: "Done", pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500" },
+  todo: { label: "Todo", pill: "bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)] border border-[var(--tg-border)]", dot: "bg-[var(--tone-neutral)]" },
+  in_progress: { label: "In progress", pill: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300", dot: "bg-[var(--tone-info)]" },
+  review: { label: "Review", pill: "bg-amber-500/15 text-amber-700 dark:text-amber-300", dot: "bg-[var(--tone-warning)]" },
+  done: { label: "Done", pill: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300", dot: "bg-[var(--tone-success)]" },
 };
 
 function dueMeta(task: ITask) {
@@ -50,12 +50,12 @@ function dueMeta(task: ITask) {
   const due = dayjs(task.dueDate).startOf("day");
   const isDone = task.status === "done";
   if (!isDone && due.isBefore(today)) {
-    return { label: `Overdue · ${due.format("MMM D")}`, tone: "bg-red-500/10 text-red-600 dark:text-red-400" };
+    return { label: `Overdue · ${due.format("MMM D")}`, tone: "bg-rose-500/15 text-rose-700 dark:text-rose-300" };
   }
   if (!isDone && due.isSame(today)) {
-    return { label: "Today", tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400" };
+    return { label: "Today", tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300" };
   }
-  return { label: due.format("MMM D"), tone: "border border-[var(--tg-border)] bg-[var(--tg-bg)] text-[var(--tg-hint)]" };
+  return { label: due.format("MMM D"), tone: "border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)]" };
 }
 
 function stepProgress(task: ITask): { done: number; total: number } {
@@ -143,7 +143,7 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
         <div
           className={clsx(
             "pointer-events-none absolute inset-y-0 left-0 flex items-center justify-start pl-5",
-            "bg-emerald-500/90 text-white",
+            "bg-[var(--tone-success)]/90 text-white",
           )}
           style={{ width: `${Math.max(dx, 0)}px` }}
         >
@@ -170,7 +170,7 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
           }
         }}
         className={clsx(
-          "group relative flex w-full gap-3 rounded-[var(--radius-2xl)] border border-[var(--tg-border)] border-l-4 bg-[var(--tg-card-bg)] p-4 text-left",
+          "group relative flex w-full gap-3 rounded-[var(--radius-2xl)] border border-[var(--tg-border)] border-l-[3px] bg-[var(--tg-card-bg)] p-4 text-left",
           "shadow-[var(--shadow-sm)] hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:scale-[0.985] active:shadow-none",
           "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)] transition-shadow",
           "touch-pan-y select-none",
@@ -187,8 +187,8 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
           className={clsx(
             "relative mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition",
             isDone
-              ? "border-emerald-500 bg-emerald-500 text-white"
-              : "border-[var(--tg-border-strong)] hover:border-emerald-500",
+              ? "border-[var(--tone-success)] bg-[var(--tone-success)] text-white"
+              : "border-[var(--tg-border-strong)] hover:border-[var(--tone-success)]",
             popping && "animate-pop",
           )}
         >
@@ -228,7 +228,7 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
                 <div
                   className={clsx(
                     "h-full rounded-full transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
-                    pct === 100 ? "bg-emerald-500" : "bg-[var(--tg-button)]",
+                    pct === 100 ? "bg-[var(--tone-success)]" : "bg-[var(--tg-button)]",
                   )}
                   style={{ width: `${pct}%` }}
                 />

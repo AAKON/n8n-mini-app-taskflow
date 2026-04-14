@@ -71,7 +71,7 @@ export default function AnalyticsPage() {
       {loading ? (
         <div className="flex items-center justify-center py-12"><Spinner /></div>
       ) : error ? (
-        <p className="px-4 text-center text-sm text-red-500">{error}</p>
+        <p className="px-4 text-center text-sm text-[var(--tone-danger)]">{error}</p>
       ) : data ? (
         <div className="space-y-4 px-3">
           <section className="tf-card p-4">
@@ -80,10 +80,10 @@ export default function AnalyticsPage() {
             <TrendChart trend={data.trend} />
             <div className="mt-3 flex items-center gap-4 text-[11px] text-[var(--tg-hint)]">
               <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-sky-500" /> Created
+                <span className="h-2 w-2 rounded-full bg-[var(--tone-info)]" /> Created
               </span>
               <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Done
+                <span className="h-2 w-2 rounded-full bg-[var(--tone-success)]" /> Done
               </span>
             </div>
           </section>
@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-[var(--tg-border)]">
                         <div
-                          className="h-full rounded-full bg-amber-500 transition-[width]"
+                          className="h-full rounded-full bg-[var(--tone-warning)] transition-[width]"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -156,8 +156,8 @@ function TrendChart({ trend }: { trend: Analytics["trend"] }) {
         role="img"
         aria-label="Created vs done trend"
       >
-        <path d={toPath("created")} fill="none" stroke="rgb(14 165 233)" strokeWidth={2} />
-        <path d={toPath("done")} fill="none" stroke="rgb(16 185 129)" strokeWidth={2} />
+        <path d={toPath("created")} fill="none" stroke="var(--tone-info)" strokeWidth={2} />
+        <path d={toPath("done")} fill="none" stroke="var(--tone-success)" strokeWidth={2} />
       </svg>
       <div className="mt-1 flex justify-between text-[9px] text-[var(--tg-hint)]">
         <span>{dayjs(trend[0]?.date).format("MMM D")}</span>

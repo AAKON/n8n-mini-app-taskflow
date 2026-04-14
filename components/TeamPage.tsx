@@ -28,10 +28,10 @@ const ROLE_LABEL: Record<Role, string> = {
 };
 
 const ROLE_COLOR: Record<Role, string> = {
-  admin: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
-  department_head: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  manager: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  member: "bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)]",
+  admin: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  department_head: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300",
+  manager: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  member: "bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)] border border-[var(--tg-border)]",
 };
 
 export function TeamPage() {

@@ -176,7 +176,7 @@ export default function AdminPage() {
       {tab === "users" ? (
         <div className="px-3 pt-3">
           {usersErr ? (
-            <p className="text-center text-sm text-red-500">{usersErr}</p>
+            <p className="text-center text-sm text-[var(--tone-danger)]">{usersErr}</p>
           ) : null}
           {loadingUsers ? (
             <Spinner className="min-h-[40vh]" />
@@ -214,7 +214,7 @@ export default function AdminPage() {
       ) : (
         <div className="space-y-4 px-3 py-4">
           {statsErr ? (
-            <p className="text-center text-sm text-red-500">{statsErr}</p>
+            <p className="text-center text-sm text-[var(--tone-danger)]">{statsErr}</p>
           ) : null}
           {loadingStats ? (
             <Spinner className="min-h-[40vh]" />
@@ -263,7 +263,7 @@ export default function AdminPage() {
                   <p className="text-xs font-medium text-[var(--tg-hint)]">
                     Overdue
                   </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-[var(--tone-warning)]">
                     {summary.overdue}
                   </p>
                 </section>

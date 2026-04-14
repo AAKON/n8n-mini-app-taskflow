@@ -16,10 +16,10 @@ const ICONS: Record<TaskPriority, LucideIcon> = {
 };
 
 const COLORS: Record<TaskPriority, string> = {
-  low: "text-slate-500",
-  medium: "text-blue-500",
-  high: "text-orange-500",
-  urgent: "text-red-500",
+  low: "text-[var(--tone-neutral)]",
+  medium: "text-[var(--tone-info)]",
+  high: "text-[var(--tone-warning)]",
+  urgent: "text-[var(--tone-danger)]",
 };
 
 export type PriorityIconProps = {

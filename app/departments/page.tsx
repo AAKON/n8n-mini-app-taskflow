@@ -275,7 +275,7 @@ export default function DepartmentsPage() {
       </div>
 
       {error ? (
-        <p className="px-4 py-3 text-center text-sm text-red-500">{error}</p>
+        <p className="px-4 py-3 text-center text-sm text-[var(--tone-danger)]">{error}</p>
       ) : null}
 
       <div className="px-2 pt-2">
@@ -320,7 +320,7 @@ export default function DepartmentsPage() {
             </select>
           </label>
           {addErr ? (
-            <p className="text-sm text-red-500">{addErr}</p>
+            <p className="text-sm text-[var(--tone-danger)]">{addErr}</p>
           ) : null}
           <button
             type="button"
@@ -364,7 +364,7 @@ export default function DepartmentsPage() {
             </select>
           </label>
           {editErr ? (
-            <p className="text-sm text-red-500">{editErr}</p>
+            <p className="text-sm text-[var(--tone-danger)]">{editErr}</p>
           ) : null}
           <button
             type="button"

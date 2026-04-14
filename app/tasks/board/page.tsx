@@ -11,10 +11,10 @@ import type { TaskStatus } from "@/types";
 import type { TaskListTask } from "@/components/TaskCard";
 
 const COLUMNS: { status: TaskStatus; label: string; tone: string }[] = [
-  { status: "todo", label: "Todo", tone: "bg-zinc-500/10 text-zinc-600 dark:text-zinc-300" },
-  { status: "in_progress", label: "In Progress", tone: "bg-sky-500/10 text-sky-700 dark:text-sky-300" },
-  { status: "review", label: "Review", tone: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
-  { status: "done", label: "Done", tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
+  { status: "todo", label: "Todo", tone: "border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)]" },
+  { status: "in_progress", label: "In Progress", tone: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300" },
+  { status: "review", label: "Review", tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+  { status: "done", label: "Done", tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
 ];
 
 type PaginatedPayload = {
@@ -78,7 +78,7 @@ export default function BoardPage() {
   if (!token || !user) return <SignInNotice />;
 
   return (
-    <div className="tf-page flex min-h-screen flex-col pt-3">
+    <div className="tf-page flex min-h-screen flex-col pt-4">
       <div className="mb-3 flex items-center justify-between px-4">
         <h1 className="text-lg font-bold text-[var(--tg-text)]">Board</h1>
         <button
@@ -93,7 +93,7 @@ export default function BoardPage() {
       {loading ? (
         <div className="flex flex-1 items-center justify-center"><Spinner /></div>
       ) : (
-        <div className="no-scrollbar flex flex-1 gap-3 overflow-x-auto px-3 pb-24">
+        <div className="no-scrollbar flex flex-1 snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-24">
           {COLUMNS.map((col) => {
             const items = tasks.filter((t) => t.status === col.status);
             return (
@@ -107,7 +107,7 @@ export default function BoardPage() {
                   setDragOver(null);
                 }}
                 className={clsx(
-                  "flex w-72 shrink-0 flex-col rounded-2xl border border-[var(--tg-border)] bg-[var(--tg-card-muted)] p-2",
+                  "tf-card-muted flex w-[84vw] max-w-[22rem] min-w-[17.5rem] shrink-0 snap-center flex-col p-2.5",
                   dragOver === col.status && "ring-2 ring-[var(--tg-button)]",
                 )}
               >
@@ -122,11 +122,11 @@ export default function BoardPage() {
                     <div
                       key={t._id}
                       draggable
-                      onDragStart={() => setDragId(t._id)}
-                      onDragEnd={() => setDragId(null)}
-                      onClick={() => router.push(`/tasks/${t._id}`)}
-                      className="cursor-grab rounded-xl border border-[var(--tg-border)] bg-[var(--tg-card-bg)] p-3 text-left text-[var(--tg-text)] shadow-[var(--shadow-sm)] transition hover:shadow-[var(--shadow-md)] active:cursor-grabbing"
-                    >
+                        onDragStart={() => setDragId(t._id)}
+                        onDragEnd={() => setDragId(null)}
+                        onClick={() => router.push(`/tasks/${t._id}`)}
+                        className="cursor-grab rounded-xl border border-[var(--tg-border)] bg-[var(--tg-card-bg)] p-3.5 text-left text-[var(--tg-text)] shadow-[var(--shadow-sm)] transition hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:cursor-grabbing"
+                      >
                       <p className="line-clamp-2 text-sm font-medium">{t.title}</p>
                       {t.departmentPath ? (
                         <p className="mt-1 truncate text-[10px] text-[var(--tg-hint)]">{t.departmentPath}</p>

@@ -71,10 +71,10 @@ const STATUS_TABS: { value: TaskStatus; label: string }[] = [
 ];
 
 const PRIORITY_ACCENT: Record<TaskPriority, string> = {
-  urgent: "border-l-red-500",
-  high: "border-l-orange-500",
-  medium: "border-l-blue-400",
-  low: "border-l-slate-300 dark:border-l-slate-600",
+  urgent: "border-l-[var(--tone-danger)]",
+  high: "border-l-[var(--tone-warning)]",
+  medium: "border-l-[var(--tone-info)]",
+  low: "border-l-[var(--tg-border-strong)]",
 };
 
 function toITask(t: TaskDetailModel): ITask {
@@ -223,7 +223,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   if (loadError || !task) {
     return (
       <div className="tf-page min-h-screen p-4 text-[var(--tg-text)]">
-        <p className="text-sm text-red-500">{loadError ?? "Not found"}</p>
+        <p className="text-sm text-[var(--tone-danger)]">{loadError ?? "Not found"}</p>
         <button type="button" className="mt-4 min-h-[44px] text-[var(--tg-link)]"
           onClick={() => { haptic("light"); router.push("/"); }}>
           Back to tasks
@@ -318,16 +318,16 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           <div className="tf-card flex items-center gap-2.5 p-3">
             <div className={clsx(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-              isOverdue ? "bg-red-100 dark:bg-red-900/30" : "bg-[var(--tg-bg)]",
+              isOverdue ? "bg-rose-500/15" : "bg-[var(--tg-bg)]",
             )}>
-              <Calendar className={clsx("h-4 w-4", isOverdue ? "text-red-500" : "text-[var(--tg-hint)]")} />
+              <Calendar className={clsx("h-4 w-4", isOverdue ? "text-[var(--tone-danger)]" : "text-[var(--tg-hint)]")} />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">Due date</p>
-              <p className={clsx("text-xs font-medium", isOverdue ? "text-red-500" : "")}>
+              <p className={clsx("text-xs font-medium", isOverdue ? "text-[var(--tone-danger)]" : "")}>
                 {task.dueDate ? dayjs(task.dueDate).format("MMM D, YYYY") : "Not set"}
               </p>
-              {isOverdue ? <p className="text-[10px] text-red-400">Overdue</p> : null}
+              {isOverdue ? <p className="text-[10px] text-rose-400">Overdue</p> : null}
             </div>
           </div>
 
@@ -455,7 +455,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           <button
             type="button"
             onClick={() => { haptic("success"); void updateTaskStatus("done"); }}
-            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 text-sm font-semibold text-white shadow-[var(--shadow-md)] transition active:scale-[0.985]"
+            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[var(--tone-success)] text-sm font-semibold text-white shadow-[var(--shadow-md)] transition active:scale-[0.985]"
           >
             <Check className="h-5 w-5" strokeWidth={3} />
             Mark as done

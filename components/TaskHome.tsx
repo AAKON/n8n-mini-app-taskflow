@@ -218,12 +218,12 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   }).length;
 
   return (
-    <div className="tf-page flex min-h-screen flex-col pt-2">
+    <div className="tf-page flex min-h-screen flex-col pt-3">
       <div className="space-y-3 px-3">
         <section className="tf-hero p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--tg-hint)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--tg-hint)]">
                 {workspaceLabel}
               </p>
               <h1 className="mt-1 truncate text-2xl font-semibold leading-tight">
@@ -233,7 +233,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
                 {total} task{total !== 1 ? "s" : ""} in this view
               </p>
             </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-1)] to-[var(--brand-2)] text-white shadow-[var(--shadow-sm)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--tg-border)] bg-[var(--tg-card-bg)] text-[var(--brand-1)] shadow-[var(--shadow-sm)]">
               <ListTodo className="h-5 w-5" />
             </div>
           </div>
@@ -289,7 +289,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
           </div>
         </section>
 
-        <section className="tf-card p-3">
+        <section className="tf-card p-3.5">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--tg-hint)]" />
@@ -324,12 +324,12 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
                 "relative shrink-0 flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--tg-border)] transition",
                 showFilters || activeFilterCount > 0
                   ? "bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
-                  : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+                  : "bg-[var(--tg-card-bg)] text-[var(--tg-text)]",
               )}
             >
               <SlidersHorizontal className="h-4 w-4" />
               {activeFilterCount > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand-2)] text-[10px] font-bold text-white">
                   {activeFilterCount}
                 </span>
               ) : null}
@@ -358,7 +358,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
           </div>
 
           {showFilters ? (
-            <div className="mt-3 space-y-3 rounded-xl border border-[var(--tg-border)] bg-[var(--tg-card-muted)] p-3">
+            <div className="mt-3 space-y-3 rounded-xl border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)]/60 p-3">
               <div>
                 <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">
                   Due date
@@ -439,7 +439,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
               haptic("light");
               clearFilters();
             }}
-            className="inline-flex items-center gap-1 text-red-500"
+            className="inline-flex items-center gap-1 text-[var(--tg-link)]"
           >
             <X className="h-3.5 w-3.5" />
             Clear filters
@@ -448,7 +448,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
       </div>
 
       {error ? (
-        <p className="px-4 py-2 text-center text-sm text-red-500">{error}</p>
+        <p className="px-4 py-2 text-center text-sm text-[var(--tone-danger)]">{error}</p>
       ) : null}
 
       <div
@@ -495,7 +495,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
                           className={clsx(
                             "text-[11px] font-semibold uppercase tracking-wider",
                             key === "overdue"
-                              ? "text-red-500"
+                              ? "text-[var(--tone-danger)]"
                               : "text-[var(--tg-hint)]",
                           )}
                         >
@@ -552,7 +552,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
           className={clsx(
             "tf-btn-primary fixed right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full shadow-[var(--shadow-lg)]",
             "min-h-[44px] min-w-[44px] transition active:scale-95",
-            "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]",
+            "bottom-[calc(4.7rem+env(safe-area-inset-bottom))]",
           )}
           onClick={() => { haptic("light"); setCreateOpen(true); }}
         >
@@ -581,10 +581,10 @@ function TabButton(props: {
       disabled={props.disabled}
       onClick={() => { haptic("light"); props.onClick(); }}
       className={clsx(
-        "min-h-[42px] flex-1 rounded-xl border px-2 py-2 text-xs font-semibold uppercase tracking-wide transition",
+        "min-h-[42px] flex-1 rounded-xl border px-2 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition",
         props.active
           ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
-          : "border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+          : "border-[var(--tg-border)] bg-[var(--tg-card-bg)] text-[var(--tg-text)]",
         props.disabled && "opacity-50",
       )}
     >
@@ -602,12 +602,12 @@ function MetricTile(props: {
   return (
     <div
       className={clsx(
-        "rounded-xl border p-2.5",
+        "rounded-xl border bg-[var(--tg-card-bg)] p-2.5 shadow-[var(--shadow-sm)]",
         props.tone === "success"
           ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
           : props.tone === "danger"
-            ? "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-300"
-            : "border-[var(--tg-border)] bg-[var(--tg-card-muted)] text-[var(--tg-text)]",
+            ? "border-rose-400/30 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+            : "border-[var(--tg-border)] text-[var(--tg-text)]",
       )}
     >
       <div className="flex items-center justify-between gap-1">

@@ -7,22 +7,22 @@ const STATUS_META: Record<
 > = {
   todo: {
     label: "Todo",
-    dot: "bg-zinc-400",
-    pill: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300",
+    dot: "bg-[var(--tone-neutral)]",
+    pill: "bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)]",
   },
   in_progress: {
     label: "In progress",
-    dot: "bg-sky-500",
-    pill: "bg-sky-500/15 text-sky-800 dark:text-sky-200",
+    dot: "bg-[var(--tone-info)]",
+    pill: "bg-cyan-500/15 text-cyan-800 dark:text-cyan-200",
   },
   review: {
     label: "Review",
-    dot: "bg-amber-500",
+    dot: "bg-[var(--tone-warning)]",
     pill: "bg-amber-500/15 text-amber-900 dark:text-amber-200",
   },
   done: {
     label: "Done",
-    dot: "bg-emerald-500",
+    dot: "bg-[var(--tone-success)]",
     pill: "bg-emerald-500/15 text-emerald-900 dark:text-emerald-200",
   },
 };
@@ -33,23 +33,23 @@ const PRIORITY_META: Record<
 > = {
   low: {
     label: "Low",
-    dot: "bg-slate-400",
-    pill: "bg-slate-500/15 text-slate-800 dark:text-slate-200",
+    dot: "bg-[var(--tone-neutral)]",
+    pill: "bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)]",
   },
   medium: {
     label: "Medium",
-    dot: "bg-blue-500",
-    pill: "bg-blue-500/15 text-blue-900 dark:text-blue-100",
+    dot: "bg-[var(--tone-info)]",
+    pill: "bg-cyan-500/15 text-cyan-900 dark:text-cyan-100",
   },
   high: {
     label: "High",
-    dot: "bg-orange-500",
-    pill: "bg-orange-500/15 text-orange-900 dark:text-orange-100",
+    dot: "bg-[var(--tone-warning)]",
+    pill: "bg-amber-500/15 text-amber-900 dark:text-amber-100",
   },
   urgent: {
     label: "Urgent",
-    dot: "bg-red-500",
-    pill: "bg-red-500/15 text-red-900 dark:text-red-100",
+    dot: "bg-[var(--tone-danger)]",
+    pill: "bg-rose-500/15 text-rose-900 dark:text-rose-100",
   },
 };
 

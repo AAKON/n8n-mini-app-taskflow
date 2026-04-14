@@ -9,7 +9,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <ToastContainer />
       <ThemeToggle />
-      <div className="mx-auto w-full max-w-6xl pb-[calc(4.25rem+max(10px,env(safe-area-inset-bottom)))]">
+      <div className="mx-auto w-full max-w-[38rem] pb-[calc(4.25rem+max(10px,env(safe-area-inset-bottom)))] sm:px-2">
         {children}
       </div>
       <BottomNav />

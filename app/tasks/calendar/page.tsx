@@ -12,10 +12,10 @@ import { haptic, hideBackButton } from "@/lib/tma";
 import type { TaskListTask } from "@/components/TaskCard";
 
 const PRIORITY_DOT: Record<string, string> = {
-  urgent: "bg-red-500",
-  high: "bg-orange-500",
-  medium: "bg-blue-500",
-  low: "bg-slate-400",
+  urgent: "bg-[var(--tone-danger)]",
+  high: "bg-[var(--tone-warning)]",
+  medium: "bg-[var(--tone-info)]",
+  low: "bg-[var(--tone-neutral)]",
 };
 
 export default function CalendarPage() {
@@ -73,7 +73,7 @@ export default function CalendarPage() {
   const today = dayjs().format("YYYY-MM-DD");
 
   return (
-    <div className="tf-page min-h-screen pb-24 pt-3 text-[var(--tg-text)]">
+    <div className="tf-page min-h-screen pb-24 pt-4 text-[var(--tg-text)]">
       <div className="mb-3 flex items-center justify-between px-4">
         <button
           type="button"
@@ -92,7 +92,7 @@ export default function CalendarPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5 px-2 pb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--tg-hint)]">
+      <div className="grid grid-cols-7 gap-1 px-2 pb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--tg-hint)]">
         {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
           <div key={i}>{d}</div>
         ))}
@@ -101,7 +101,7 @@ export default function CalendarPage() {
       {loading ? (
         <div className="flex items-center justify-center py-8"><Spinner /></div>
       ) : (
-        <div className="grid grid-cols-7 gap-0.5 px-2">
+        <div className="grid grid-cols-7 gap-1 px-2">
           {grid.map((cell, i) => {
             if (!cell) return <div key={i} className="aspect-square" />;
             const key = cell.format("YYYY-MM-DD");
@@ -117,7 +117,7 @@ export default function CalendarPage() {
                   "aspect-square rounded-xl border p-1 text-left transition",
                   isSelected
                     ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
-                    : "border-[var(--tg-border)] bg-[var(--tg-card-bg)]",
+                    : "border-[var(--tg-border)] bg-[var(--tg-card-bg)] shadow-[var(--shadow-sm)]",
                   isToday && !isSelected && "ring-1 ring-[var(--tg-button)]",
                 )}
               >

@@ -62,7 +62,7 @@ export function BottomNav() {
       }}
       aria-label="Main"
     >
-      <div className="mx-auto max-w-xl rounded-[1.4rem] border border-[var(--tg-border)] bg-[var(--tg-bg)]/90 p-1.5 shadow-[var(--shadow-lg)] backdrop-blur-xl">
+      <div className="tf-nav-shell mx-auto max-w-[38rem] p-1.5">
         <div className="flex items-stretch justify-around gap-1">
           {items.map(({ href, label, icon: Icon }) => {
             const active =
@@ -75,10 +75,10 @@ export function BottomNav() {
                 href={href}
                 onClick={() => haptic("light")}
                 className={clsx(
-                  "flex min-h-[44px] min-w-[56px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 text-[10px] font-medium transition-colors",
+                  "tf-nav-item px-1 py-1 text-[10px] font-medium",
                   active
-                    ? "bg-[var(--tg-button)]/15 text-[var(--tg-button)]"
-                    : "text-[var(--tg-hint)] hover:bg-[var(--tg-surface-hover)]",
+                    ? "tf-nav-item-active font-semibold"
+                    : "hover:bg-[var(--tg-surface-hover)]",
                 )}
               >
                 <Icon className="h-5 w-5" strokeWidth={active ? 2.3 : 2} />
