@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ListTodo, Plus, SlidersHorizontal, X } from "lucide-react";
+import dayjs from "dayjs";
+import { ListTodo, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import type { TaskListTask } from "@/components/TaskCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useTasks, type TaskTab } from "@/hooks/useTasks";
 import { TaskCard } from "@/components/TaskCard";
@@ -41,6 +43,8 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   const { user, token } = useAuth();
   const [tab, setTab] = useState<TaskTab>(initialTab);
   const [status, setStatus] = useState<TaskStatus | "">("");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const [dueFilter, setDueFilter] = useState<DueFilter>(null);
   const [deptFilter, setDeptFilter] = useState("");
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -88,7 +92,13 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
     userId: user?._id ?? "",
     dueFilter: dueFilter ?? undefined,
     departmentPath: deptFilter || undefined,
+    q: search || undefined,
   });
+
+  useEffect(() => {
+    const h = setTimeout(() => setSearch(searchInput), 250);
+    return () => clearTimeout(h);
+  }, [searchInput]);
 
   useEffect(() => {
     document.title = initialTab === "team" ? "Team · TaskFlow" : "TaskFlow";
@@ -137,6 +147,39 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
 
   const goTask = useCallback((id: string) => { router.push(`/tasks/${id}`); }, [router]);
 
+  const handleComplete = useCallback(async (taskId: string) => {
+    if (!token) return;
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "done" }),
+      });
+      await refetch();
+    } catch {
+      // silent — refetch will re-sync next time
+    }
+  }, [token, refetch]);
+
+  const grouped = useMemo(() => {
+    if (dueFilter || status) return null;
+    const today = dayjs().startOf("day");
+    const weekEnd = today.add(7, "day");
+    const sections: Record<"overdue" | "today" | "week" | "later" | "nodue" | "done", TaskListTask[]> = {
+      overdue: [], today: [], week: [], later: [], nodue: [], done: [],
+    };
+    for (const t of tasks) {
+      if (t.status === "done") { sections.done.push(t); continue; }
+      if (!t.dueDate) { sections.nodue.push(t); continue; }
+      const d = dayjs(t.dueDate).startOf("day");
+      if (d.isBefore(today)) sections.overdue.push(t);
+      else if (d.isSame(today)) sections.today.push(t);
+      else if (d.isBefore(weekEnd)) sections.week.push(t);
+      else sections.later.push(t);
+    }
+    return sections;
+  }, [tasks, dueFilter, status]);
+
   const clearFilters = () => {
     setStatus("");
     setDueFilter(null);
@@ -158,7 +201,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
     <div className="flex min-h-screen flex-col bg-[var(--tg-bg)] pt-2">
       {/* Tab bar */}
       {showTeamTab ? (
-        <div className="flex gap-1 border-b border-black/5 px-3 pb-2 dark:border-white/10">
+        <div className="sticky top-0 z-10 flex gap-1 border-b border-[var(--tg-border)] bg-[var(--tg-bg)]/95 px-3 pb-2 backdrop-blur">
           <TabButton active={tab === "my"} disabled={isLoading && tasks.length === 0} onClick={() => setTab("my")} label="My Tasks" />
           <TabButton active={tab === "team"} disabled={isLoading && tasks.length === 0} onClick={() => setTab("team")} label="Team" />
           {showAllTab ? (
@@ -166,6 +209,30 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
           ) : null}
         </div>
       ) : null}
+
+      {/* Search bar */}
+      <div className="px-3 pt-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--tg-hint)]" />
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search tasks…"
+            className="min-h-[40px] w-full rounded-full bg-[var(--tg-secondary-bg)] py-2 pl-9 pr-9 text-sm text-[var(--tg-text)] placeholder:text-[var(--tg-hint)]"
+          />
+          {searchInput ? (
+            <button
+              type="button"
+              onClick={() => { setSearchInput(""); setSearch(""); }}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--tg-hint)]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
+      </div>
 
       {/* Filter header */}
       <div className="flex items-center gap-2 px-3 pt-3 pb-1">
@@ -322,9 +389,48 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
           />
         ) : (
           <>
-            {tasks.map((t) => (
-              <TaskCard key={t._id} task={t} onClick={() => goTask(t._id)} />
-            ))}
+            {grouped ? (
+              <>
+                {(
+                  [
+                    ["overdue", "Overdue"],
+                    ["today", "Today"],
+                    ["week", "This week"],
+                    ["later", "Later"],
+                    ["nodue", "No due date"],
+                    ["done", "Completed"],
+                  ] as const
+                ).map(([key, label]) =>
+                  grouped[key].length > 0 ? (
+                    <div key={key} className="flex flex-col gap-3">
+                      <h2 className={clsx(
+                        "px-1 pt-2 text-[11px] font-semibold uppercase tracking-wider",
+                        key === "overdue" ? "text-red-500" : "text-[var(--tg-hint)]",
+                      )}>
+                        {label} · {grouped[key].length}
+                      </h2>
+                      {grouped[key].map((t) => (
+                        <TaskCard
+                          key={t._id}
+                          task={t}
+                          onClick={() => goTask(t._id)}
+                          onComplete={handleComplete}
+                        />
+                      ))}
+                    </div>
+                  ) : null,
+                )}
+              </>
+            ) : (
+              tasks.map((t) => (
+                <TaskCard
+                  key={t._id}
+                  task={t}
+                  onClick={() => goTask(t._id)}
+                  onComplete={handleComplete}
+                />
+              ))
+            )}
             <div ref={loadSentinelRef} className="h-2 w-full shrink-0" />
             {isLoadingMore ? (
               <p className="pb-6 text-center text-xs text-[var(--tg-hint)]">Loading more…</p>

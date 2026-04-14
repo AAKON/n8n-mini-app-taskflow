@@ -1,12 +1,5 @@
 import User from "@/models/User";
-import {
-  apiError,
-  apiResponse,
-  withAuth,
-  type AuthedRouteContext,
-} from "@/lib/api-helpers";
-import { validateN8nSecret } from "@/lib/n8n-auth";
-import connectDB from "@/lib/mongodb";
+import { apiError, apiResponse, withAuth } from "@/lib/api-helpers";
 import { escapeRegex } from "@/lib/path-utils";
 import type { Role } from "@/types";
 
@@ -26,7 +19,7 @@ function departmentSubtreeFilter(userDeptPath: string) {
   };
 }
 
-const getUsersWithJwt = withAuth(async (req, user) => {
+export const GET = withAuth(async (req, user) => {
   if (user.role === "member") {
     return apiError("Forbidden", 403);
   }
@@ -75,20 +68,3 @@ const getUsersWithJwt = withAuth(async (req, user) => {
 
   return apiResponse(data);
 });
-
-/** JWT (app) or `x-n8n-secret` (n8n digest / automation). */
-export async function GET(req: Request, ctx: AuthedRouteContext) {
-  await connectDB();
-  if (validateN8nSecret(req)) {
-    const users = await User.find({})
-      .select("_id name username avatarUrl role departmentPath telegramId")
-      .sort({ name: 1 })
-      .lean();
-    const data = users.map((u) => ({
-      ...u,
-      _id: String(u._id),
-    }));
-    return apiResponse(data);
-  }
-  return getUsersWithJwt(req, ctx ?? {});
-}

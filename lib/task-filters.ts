@@ -10,6 +10,7 @@ export type TaskListQuery = {
   assigneeId?: string | null;
   departmentPath?: string | null;
   dueFilter?: DueFilter;
+  q?: string | null;
 };
 
 /** Builds Mongo filter for GET /api/tasks (role + optional query filters). */
@@ -51,6 +52,17 @@ export function buildTaskListFilter(
       $or: [
         { departmentPath: query.departmentPath },
         { departmentPath: { $regex: `^${escapeRegex(query.departmentPath)}\\.` } },
+      ],
+    });
+  }
+
+  if (query.q && query.q.trim()) {
+    const term = escapeRegex(query.q.trim());
+    clauses.push({
+      $or: [
+        { title: { $regex: term, $options: "i" } },
+        { description: { $regex: term, $options: "i" } },
+        { tags: { $regex: term, $options: "i" } },
       ],
     });
   }

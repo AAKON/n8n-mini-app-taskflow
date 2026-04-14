@@ -1,21 +1,20 @@
-import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { validateN8nSecret } from "@/lib/n8n-auth";
 import Task from "@/models/Task";
+
+export type DueReminder = {
+  telegramId: number;
+  assigneeUserId: string;
+  taskTitle: string;
+  taskId: string;
+  dueDate: string;
+};
 
 type PopulatedAssignee = {
   _id: unknown;
   telegramId?: number;
 };
 
-export async function GET(request: Request) {
-  if (!validateN8nSecret(request)) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 },
-    );
-  }
-
+export async function getDueRemindersNext24h(): Promise<DueReminder[]> {
   await connectDB();
 
   const now = new Date();
@@ -29,13 +28,7 @@ export async function GET(request: Request) {
     .populate("assigneeId", "telegramId")
     .lean();
 
-  const reminders: {
-    telegramId: number;
-    assigneeUserId: string;
-    taskTitle: string;
-    taskId: string;
-    dueDate: string;
-  }[] = [];
+  const reminders: DueReminder[] = [];
 
   for (const t of tasks) {
     const a = t.assigneeId as unknown as PopulatedAssignee | null;
@@ -51,5 +44,5 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json({ success: true, data: reminders });
+  return reminders;
 }

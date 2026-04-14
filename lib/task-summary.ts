@@ -1,51 +1,23 @@
-import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { validateN8nSecret } from "@/lib/n8n-auth";
 import Task from "@/models/Task";
 import User from "@/models/User";
 import type { TaskStatus } from "@/types";
 
-export async function POST(request: Request) {
-  if (!validateN8nSecret(request)) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 },
-    );
-  }
+export type TaskSummary = {
+  name: string;
+  totalOpen: number;
+  byStatus: Record<TaskStatus, number>;
+  overdue: number;
+  upcomingDueToday: number;
+};
 
-  let body: { telegramId?: unknown };
-  try {
-    body = (await request.json()) as typeof body;
-  } catch {
-    return NextResponse.json(
-      { success: false, error: "Invalid JSON" },
-      { status: 400 },
-    );
-  }
-
-  const telegramId =
-    typeof body.telegramId === "number"
-      ? body.telegramId
-      : typeof body.telegramId === "string"
-        ? Number.parseInt(body.telegramId, 10)
-        : NaN;
-
-  if (!Number.isFinite(telegramId)) {
-    return NextResponse.json(
-      { success: false, error: "telegramId is required" },
-      { status: 400 },
-    );
-  }
-
+export async function getTaskSummaryForTelegramUser(
+  telegramId: number,
+): Promise<TaskSummary | null> {
   await connectDB();
 
   const user = await User.findOne({ telegramId }).lean();
-  if (!user) {
-    return NextResponse.json(
-      { success: false, error: "User not found" },
-      { status: 404 },
-    );
-  }
+  if (!user) return null;
 
   const assigneeFilter = { assigneeId: user._id };
 
@@ -71,10 +43,7 @@ export async function POST(request: Request) {
     Task.countDocuments({
       ...assigneeFilter,
       status: { $ne: "done" },
-      dueDate: {
-        $gte: startOfToday,
-        $lte: endOfToday,
-      },
+      dueDate: { $gte: startOfToday, $lte: endOfToday },
     }),
   ]);
 
@@ -93,14 +62,11 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      name: user.name,
-      totalOpen,
-      byStatus,
-      overdue,
-      upcomingDueToday,
-    },
-  });
+  return {
+    name: user.name,
+    totalOpen,
+    byStatus,
+    overdue,
+    upcomingDueToday,
+  };
 }

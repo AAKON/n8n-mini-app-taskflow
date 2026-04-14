@@ -1,113 +1,115 @@
-# Internal API routes (n8n)
+# Automation routes
 
-All routes require the shared secret header:
+TaskFlow runs all automation inside the Next.js app. Two flavours of routes exist outside the normal JWT-authenticated API:
+
+- **Bot webhook** — receives Telegram updates when users talk to the bot.
+- **Cron routes** — hit by a scheduler (Vercel Cron, GitHub Actions, or any external cron service) to run reminders and digests.
+
+Both are guarded by shared secrets set in the environment.
+
+---
+
+## `POST /api/bot/webhook`
+
+Receives updates from Telegram and handles `/start` and `/tasks` commands.
+
+**Headers**
 
 | Header | Value |
-|--------|--------|
-| `x-n8n-secret` | Same as `N8N_SECRET` in `.env.local` |
+|--------|-------|
+| `X-Telegram-Bot-Api-Secret-Token` | Same as `TELEGRAM_WEBHOOK_SECRET` |
 
-If the secret is missing, wrong, or `N8N_SECRET` is unset, responses return **401 Unauthorized**.
-
-Base URL: your app origin (e.g. `https://your-host` or `http://localhost:3000`).
-
----
-
-## `GET /api/users` (n8n only, no JWT)
-
-If the request includes a valid `x-n8n-secret` (same as internal routes above), **JWT is not required**. The handler returns **all** users (for digests / automation), including `telegramId`.
-
-If the secret is absent or invalid, the route falls back to normal **JWT** behaviour (managers and above, scoped lists).
-
----
-
-## `POST /api/internal/user-register`
-
-Upserts a user by Telegram ID (same fields as Telegram WebApp auth).
-
-**Body (JSON)**
-
-| Field | Type | Required |
-|-------|------|----------|
-| `telegramId` | number | yes |
-| `name` | string | yes |
-| `username` | string | no |
-| `avatarUrl` | string | no |
-
-**200** — `{ "success": true, "user": { ... }, "isNew": boolean }`
-
-`user` includes `_id` as a string and matches the `User` model shape.
-
----
-
-## `POST /api/internal/task-summary`
-
-Summary of tasks **assigned to** the user identified by `telegramId`.
-
-**Body (JSON)**
-
-| Field | Type | Required |
-|-------|------|----------|
-| `telegramId` | number | yes |
-
-**200** — `{ "success": true, "data": { ... } }`
-
-`data` fields:
-
-| Field | Meaning |
-|-------|---------|
-| `name` | User display name |
-| `totalOpen` | Count of tasks with `status !== "done"` |
-| `byStatus` | Counts per status: `todo`, `in_progress`, `review`, `done` |
-| `overdue` | Open tasks with `dueDate` before today (start of day, server local) |
-| `upcomingDueToday` | Open tasks with `dueDate` on today’s calendar day |
-
-**404** — user not found for `telegramId`.
-
----
-
-## `GET /api/internal/due-reminders`
-
-Cron-friendly list of reminders: tasks **not done**, with a **due date between now and the next 24 hours**, and a valid assignee `telegramId`.
-
-**Headers:** `x-n8n-secret` (no body).
-
-**200** — `{ "success": true, "data": Reminder[] }`
-
-Each `Reminder`:
-
-| Field | Type |
-|-------|------|
-| `telegramId` | number |
-| `assigneeUserId` | string (Mongo id of assignee) |
-| `taskTitle` | string |
-| `taskId` | string (Mongo id) |
-| `dueDate` | string (ISO 8601) |
-
----
-
-## `POST /api/internal/notifications`
-
-Logs that an external notification was sent (stored in `ActivityLog` with `action: "notification_sent"`).
-
-**Body (JSON)**
-
-| Field | Type | Required |
-|-------|------|----------|
-| `taskId` | string (Mongo id) | yes |
-| `userId` | string (Mongo id) | yes |
-| `type` | `"assigned"` \| `"reminder"` \| `"commented"` | yes |
-
-**200** — `{ "success": true, "ok": true }`
-
----
-
-## Example: curl
+Register the webhook once after deploy:
 
 ```bash
-curl -sS -X POST "$APP_URL/api/internal/user-register" \
-  -H "Content-Type: application/json" \
-  -H "x-n8n-secret: $N8N_SECRET" \
-  -d '{"telegramId":123456,"name":"Ada"}'
+curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook" \
+  -d "url=https://<your-host>/api/bot/webhook" \
+  -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
 ```
 
-Replace `$APP_URL` and `$N8N_SECRET` with real values. In n8n, use an expression for the secret, e.g. `{{ $env.N8N_SECRET }}`, and set the same value in the environment where the Next.js app runs.
+**Commands handled**
+
+| Command | Behaviour |
+|---------|-----------|
+| `/start` | Upserts the sender as a TaskFlow user and replies with a welcome DM containing a WebApp button. |
+| `/tasks` | Replies with the sender's open-task summary (totals + overdue + due today). Tells unknown users to send `/start` first. |
+
+Unknown commands and non-command messages are silently acknowledged with `{ ok: true }` so Telegram doesn't retry.
+
+---
+
+## `GET /api/cron/due-reminders`
+
+Sends a DM for every task that is **not done**, has a **due date in the next 24 hours**, and has an assignee with a Telegram ID. Each successful send writes an `ActivityLog` entry (`action: "notification_sent"`, `meta.type: "reminder"`).
+
+**Headers**
+
+| Header | Value |
+|--------|-------|
+| `Authorization` | `Bearer <CRON_SECRET>` |
+
+**200 response**
+
+```json
+{ "success": true, "total": 7, "sent": 7, "failed": 0 }
+```
+
+**Recommended schedule:** every 15 minutes.
+
+---
+
+## `GET /api/cron/daily-digest`
+
+For every user with a Telegram ID that has at least one open task, sends a task-summary DM. Users with zero open tasks are skipped.
+
+Same auth header as above.
+
+**200 response**
+
+```json
+{ "success": true, "total": 42, "sent": 18, "skipped": 24, "failed": 0 }
+```
+
+**Recommended schedule:** once per day in the morning (e.g. 08:00).
+
+---
+
+## Wiring the schedule
+
+### Vercel
+
+`vercel.json` at the repo root declares both crons — Vercel hits the routes automatically with a bearer token it derives from the project. Set `CRON_SECRET` in the project's environment and add `Authorization: Bearer $CRON_SECRET` via the Vercel Cron project setting.
+
+### External scheduler
+
+Any cron service that can make an authenticated HTTP request works. Example with `curl`:
+
+```bash
+curl -fsSL "https://<your-host>/api/cron/due-reminders" \
+  -H "Authorization: Bearer $CRON_SECRET"
+
+curl -fsSL "https://<your-host>/api/cron/daily-digest" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Schedule the first one every 15 minutes and the second one at 08:00 daily.
+
+---
+
+## Local testing
+
+With the dev server running and `.env.local` populated:
+
+```bash
+# Fake a /tasks command (webhook secret header required)
+curl -X POST "http://localhost:3000/api/bot/webhook" \
+  -H "Content-Type: application/json" \
+  -H "X-Telegram-Bot-Api-Secret-Token: $TELEGRAM_WEBHOOK_SECRET" \
+  -d '{"message":{"from":{"id":123456,"first_name":"Ada"},"text":"/tasks"}}'
+
+# Trigger the reminder cron manually
+curl "http://localhost:3000/api/cron/due-reminders" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Any DMs actually sent require `BOT_TOKEN` to be a real bot token and the target `telegramId` to correspond to a chat the bot has been started in.

@@ -153,6 +153,7 @@ export const GET = withAuth(async (req, user) => {
   const assigneeId = url.searchParams.get("assigneeId");
   const departmentPath = url.searchParams.get("departmentPath");
   const dueFilterRaw = url.searchParams.get("dueFilter");
+  const q = url.searchParams.get("q");
   const DUE_FILTERS = new Set(["overdue", "today", "week"]);
   const dueFilter: DueFilter = DUE_FILTERS.has(dueFilterRaw ?? "") ? (dueFilterRaw as DueFilter) : null;
 
@@ -183,6 +184,7 @@ export const GET = withAuth(async (req, user) => {
     assigneeId: assigneeId || null,
     departmentPath,
     dueFilter,
+    q,
   });
 
   const farFuture = new Date(8640000000000000);

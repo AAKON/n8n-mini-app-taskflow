@@ -14,6 +14,7 @@ export type UseTasksFilters = {
   userId: string;
   dueFilter?: DueFilter;
   departmentPath?: string;
+  q?: string;
 };
 
 type PaginatedPayload = {
@@ -54,9 +55,12 @@ export function useTasks(filters: UseTasksFilters) {
       if (filters.departmentPath) {
         params.set("departmentPath", filters.departmentPath);
       }
+      if (filters.q && filters.q.trim()) {
+        params.set("q", filters.q.trim());
+      }
       return `/api/tasks?${params.toString()}`;
     },
-    [filters.tab, filters.status, filters.userId, filters.dueFilter, filters.departmentPath],
+    [filters.tab, filters.status, filters.userId, filters.dueFilter, filters.departmentPath, filters.q],
   );
 
   const fetchPage = useCallback(
@@ -139,6 +143,7 @@ export function useTasks(filters: UseTasksFilters) {
     filters.status,
     filters.dueFilter,
     filters.departmentPath,
+    filters.q,
     fetchPage,
   ]);
 

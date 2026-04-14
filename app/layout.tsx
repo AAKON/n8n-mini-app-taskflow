@@ -19,6 +19,13 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "TaskFlow",
   description: "Telegram Mini App — tasks and teams",
+  manifest: "/manifest.json",
+  themeColor: "#2481cc",
+  appleWebApp: {
+    capable: true,
+    title: "TaskFlow",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({
@@ -33,6 +40,9 @@ export default function RootLayout({
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
+        <Script id="sw-register" strategy="afterInteractive">
+          {`if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); }); }`}
+        </Script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-tg-bg font-sans text-tg-text antialiased`}

@@ -1,8 +1,9 @@
 "use client";
 
+import { useRef, useState } from "react";
 import dayjs from "dayjs";
 import clsx from "clsx";
-import { Calendar, CheckSquare, ChevronRight } from "lucide-react";
+import { Calendar, CheckSquare, Check } from "lucide-react";
 import type { ITask } from "@/types";
 import { Avatar, type AvatarUser } from "@/components/ui/Avatar";
 import { haptic } from "@/lib/tma";
@@ -12,6 +13,7 @@ export type TaskListTask = ITask & { assignee?: AvatarUser };
 export type TaskCardProps = {
   task: TaskListTask;
   onClick: () => void;
+  onComplete?: (taskId: string) => void;
 };
 
 const PRIORITY_ACCENT: Record<string, string> = {
@@ -42,9 +44,18 @@ const STATUS_META: Record<string, { label: string; pill: string; dot: string }> 
   done: { label: "Done", pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500" },
 };
 
-function isOverdue(task: ITask): boolean {
-  if (task.status === "done" || !task.dueDate) return false;
-  return dayjs(task.dueDate).isBefore(dayjs().startOf("day"));
+function dueMeta(task: ITask) {
+  if (!task.dueDate) return null;
+  const today = dayjs().startOf("day");
+  const due = dayjs(task.dueDate).startOf("day");
+  const isDone = task.status === "done";
+  if (!isDone && due.isBefore(today)) {
+    return { label: `Overdue · ${due.format("MMM D")}`, tone: "bg-red-500/10 text-red-600 dark:text-red-400" };
+  }
+  if (!isDone && due.isSame(today)) {
+    return { label: "Today", tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400" };
+  }
+  return { label: due.format("MMM D"), tone: "bg-black/5 text-[var(--tg-hint)] dark:bg-white/10" };
 }
 
 function stepProgress(task: ITask): { done: number; total: number } {
@@ -52,91 +63,200 @@ function stepProgress(task: ITask): { done: number; total: number } {
   return { done: steps.filter((s) => s.done).length, total: steps.length };
 }
 
-export function TaskCard({ task, onClick }: TaskCardProps) {
+const SWIPE_THRESHOLD = 96;
+
+export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
   const { done, total } = stepProgress(task);
-  const overdue = isOverdue(task);
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-  const dueLabel = task.dueDate ? dayjs(task.dueDate).format("MMM D") : null;
+  const due = dueMeta(task);
   const status = STATUS_META[task.status] ?? STATUS_META.todo;
   const priorityAccent = PRIORITY_ACCENT[task.priority] ?? PRIORITY_ACCENT.medium;
+  const isDone = task.status === "done";
 
   const assignee: AvatarUser = task.assignee ?? {
     _id: task.assigneeId || "unassigned",
     name: task.assigneeId ? "?" : "–",
   };
 
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        haptic("light");
-        onClick();
-      }}
-      className={clsx(
-        "group flex w-full flex-col gap-3 rounded-2xl border-l-4 bg-[var(--tg-secondary-bg)] p-4 text-left",
-        "shadow-sm transition active:scale-[0.985] active:shadow-none",
-        priorityAccent,
-      )}
-    >
-      {/* Top row: title + avatar */}
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-[var(--tg-text)]">
-            {task.title}
-          </h3>
-          {task.departmentPath ? (
-            <p className="mt-0.5 truncate text-[11px] text-[var(--tg-hint)]">
-              {task.departmentPath}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <Avatar user={assignee} size="sm" />
-          <ChevronRight className="h-3.5 w-3.5 text-[var(--tg-hint)] opacity-0 transition-opacity group-active:opacity-100" />
-        </div>
-      </div>
+  const [dx, setDx] = useState(0);
+  const [popping, setPopping] = useState(false);
+  const startX = useRef<number | null>(null);
+  const startY = useRef<number | null>(null);
+  const locked = useRef<"h" | "v" | null>(null);
 
-      {/* Step progress bar */}
-      {total > 0 ? (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-[11px] text-[var(--tg-hint)]">
-              <CheckSquare className="h-3 w-3" />
-              {done}/{total} steps
-            </span>
-            <span className="text-[11px] text-[var(--tg-hint)]">{pct}%</span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
-            <div
-              className={clsx(
-                "h-full rounded-full transition-[width]",
-                pct === 100 ? "bg-emerald-500" : "bg-[var(--tg-button)]",
-              )}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
+  const canSwipe = !!onComplete && !isDone;
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!canSwipe) return;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    locked.current = null;
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!canSwipe || startX.current === null || startY.current === null) return;
+    const deltaX = e.clientX - startX.current;
+    const deltaY = e.clientY - startY.current;
+    if (locked.current === null) {
+      if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) {
+        locked.current = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
+      }
+    }
+    if (locked.current === "h" && deltaX > 0) {
+      setDx(Math.min(deltaX, 160));
+    }
+  };
+
+  const onPointerEnd = () => {
+    if (!canSwipe) return;
+    if (dx >= SWIPE_THRESHOLD && onComplete) {
+      haptic("success");
+      setPopping(true);
+      setTimeout(() => {
+        onComplete(task._id);
+        setPopping(false);
+        setDx(0);
+      }, 250);
+    } else {
+      setDx(0);
+    }
+    startX.current = null;
+    startY.current = null;
+    locked.current = null;
+  };
+
+  const handleCheck = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onComplete || isDone) return;
+    haptic("success");
+    setPopping(true);
+    setTimeout(() => {
+      onComplete(task._id);
+      setPopping(false);
+    }, 250);
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl">
+      {/* Swipe action background */}
+      {canSwipe ? (
+        <div
+          className={clsx(
+            "pointer-events-none absolute inset-y-0 left-0 flex items-center justify-start pl-5",
+            "bg-emerald-500/90 text-white",
+          )}
+          style={{ width: `${Math.max(dx, 0)}px` }}
+        >
+          {dx > 24 ? <Check className="h-5 w-5" strokeWidth={3} /> : null}
         </div>
       ) : null}
 
-      {/* Bottom row: status + priority + due */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={clsx("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", status.pill)}>
-          <span className={clsx("h-1.5 w-1.5 rounded-full", status.dot)} />
-          {status.label}
-        </span>
-        <span className={clsx("text-[11px] font-medium", PRIORITY_TEXT[task.priority])}>
-          {PRIORITY_LABEL[task.priority]}
-        </span>
-        {dueLabel ? (
-          <span className={clsx(
-            "ml-auto flex items-center gap-1 text-[11px] font-medium",
-            overdue ? "text-red-500" : "text-[var(--tg-hint)]",
-          )}>
-            <Calendar className="h-3 w-3" />
-            {overdue ? "Overdue · " : ""}{dueLabel}
-          </span>
-        ) : null}
+      <div
+        role="button"
+        tabIndex={0}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
+        onClick={() => {
+          if (locked.current === "h") return;
+          haptic("light");
+          onClick();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+        className={clsx(
+          "group relative flex w-full gap-3 rounded-2xl border-l-4 bg-[var(--tg-secondary-bg)] p-4 text-left",
+          "shadow-[var(--shadow-sm)] active:scale-[0.985] active:shadow-none",
+          "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)]",
+          "touch-pan-y select-none",
+          priorityAccent,
+          isDone && "opacity-60",
+        )}
+        style={{ transform: `translateX(${dx}px)` }}
+      >
+        {/* Checkbox */}
+        <button
+          type="button"
+          onClick={handleCheck}
+          aria-label={isDone ? "Completed" : "Mark as done"}
+          className={clsx(
+            "relative mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition",
+            isDone
+              ? "border-emerald-500 bg-emerald-500 text-white"
+              : "border-[var(--tg-hint)]/50 hover:border-emerald-500",
+            popping && "animate-pop",
+          )}
+        >
+          {isDone ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
+        </button>
+
+        <div className="min-w-0 flex-1 space-y-2">
+          {/* Title row */}
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className={clsx(
+                "line-clamp-2 text-[15px] font-semibold leading-snug text-[var(--tg-text)]",
+                isDone && "line-through",
+              )}>
+                {task.title}
+              </h3>
+              {task.departmentPath ? (
+                <p className="mt-0.5 truncate text-[11px] text-[var(--tg-hint)]">
+                  {task.departmentPath}
+                </p>
+              ) : null}
+            </div>
+            <Avatar user={assignee} size="sm" />
+          </div>
+
+          {/* Step progress */}
+          {total > 0 ? (
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1 text-[11px] text-[var(--tg-hint)]">
+                  <CheckSquare className="h-3 w-3" />
+                  {done}/{total}
+                </span>
+                <span className="text-[11px] text-[var(--tg-hint)]">{pct}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                <div
+                  className={clsx(
+                    "h-full rounded-full transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
+                    pct === 100 ? "bg-emerald-500" : "bg-[var(--tg-button)]",
+                  )}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {/* Meta row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={clsx("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", status.pill)}>
+              <span className={clsx("h-1.5 w-1.5 rounded-full", status.dot)} />
+              {status.label}
+            </span>
+            <span className={clsx("text-[11px] font-medium", PRIORITY_TEXT[task.priority])}>
+              {PRIORITY_LABEL[task.priority]}
+            </span>
+            {due ? (
+              <span className={clsx(
+                "ml-auto flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                due.tone,
+              )}>
+                <Calendar className="h-3 w-3" />
+                {due.label}
+              </span>
+            ) : null}
+          </div>
+        </div>
       </div>
-    </button>
+    </div>
   );
 }

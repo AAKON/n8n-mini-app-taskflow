@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Pencil,
   Send,
+  Check,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -444,6 +445,23 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           editTask={toITask(task)}
           onUpdated={() => { setEditSheetOpen(false); void loadTask(); }}
         />
+      ) : null}
+
+      {/* Sticky action bar */}
+      {canChangeStatus && task.status !== "done" ? (
+        <div
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--tg-border)] bg-[var(--tg-bg)]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
+          <button
+            type="button"
+            onClick={() => { haptic("success"); void updateTaskStatus("done"); }}
+            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 text-sm font-semibold text-white shadow-[var(--shadow-md)] transition active:scale-[0.985]"
+          >
+            <Check className="h-5 w-5" strokeWidth={3} />
+            Mark as done
+          </button>
+        </div>
       ) : null}
     </div>
   );
