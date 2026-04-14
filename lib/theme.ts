@@ -43,8 +43,8 @@ export function applyThemePreference(preference = getStoredThemePreference()): {
       ? telegramScheme ?? getSystemScheme(window)
       : preference;
 
-  if (preference === "auto" && !telegramScheme) {
-    // Let CSS media queries drive classes in non-Telegram web sessions.
+  if (preference === "auto") {
+    // Let CSS media queries + Telegram-provided vars drive the look.
     root.classList.remove("dark");
     root.classList.remove("light");
     root.style.removeProperty("color-scheme");

@@ -220,20 +220,20 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   return (
     <div className="tf-page flex min-h-screen flex-col pt-2">
       <div className="space-y-3 px-3">
-        <section className="tf-card overflow-hidden p-4">
+        <section className="tf-hero p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--tg-hint)]">
                 {workspaceLabel}
               </p>
-              <h1 className="mt-1 truncate text-xl font-semibold leading-tight">
-                Hi, {firstName}
+              <h1 className="mt-1 truncate text-2xl font-semibold leading-tight">
+                Hi, <span className="tf-brand-text">{firstName}</span>
               </h1>
               <p className="mt-1 text-xs text-[var(--tg-hint)]">
                 {total} task{total !== 1 ? "s" : ""} in this view
               </p>
             </div>
-            <div className="tf-card-muted flex h-10 w-10 items-center justify-center rounded-xl text-[var(--tg-button)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-1)] to-[var(--brand-2)] text-white shadow-[var(--shadow-sm)]">
               <ListTodo className="h-5 w-5" />
             </div>
           </div>

@@ -2,38 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Light palette (default) ----------
+   Telegram provides --tg-theme-* vars when running inside Telegram.
+   We use them as the first choice and fall back to our own palette.
+   For explicit .light / .dark overrides we ignore Telegram vars so the
+   manual theme toggle always wins.                                    */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --tg-bg: var(--tg-theme-bg-color, #ffffff);
-  --tg-text: var(--tg-theme-text-color, #000000);
-  --tg-hint: var(--tg-theme-hint-color, #999999);
-  --tg-link: var(--tg-theme-link-color, #2481cc);
-  --tg-button: var(--tg-theme-button-color, #2481cc);
+  --background: #f6f7fb;
+  --foreground: #0f172a;
+
+  --tg-bg: var(--tg-theme-bg-color, #f6f7fb);
+  --tg-text: var(--tg-theme-text-color, #0f172a);
+  --tg-hint: var(--tg-theme-hint-color, #64748b);
+  --tg-link: var(--tg-theme-link-color, #4f46e5);
+  --tg-button: var(--tg-theme-button-color, #6366f1);
   --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
-  --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #ffffff);
   --tg-header-bg: var(--tg-theme-header-bg-color, var(--tg-bg));
 
-  /* Subtle surface overlays — replace ad-hoc black/5, white/10 */
-  --tg-surface-hover: rgba(0, 0, 0, 0.04);
-  --tg-border: rgba(0, 0, 0, 0.08);
-  --tg-border-strong: rgba(0, 0, 0, 0.14);
-  --tg-divider: rgba(0, 0, 0, 0.06);
-  --tg-card-bg: var(--tg-secondary-bg);
-  --tg-card-muted: rgba(255, 255, 255, 0.6);
-  --tg-ring: rgba(36, 129, 204, 0.32);
+  --tg-card-bg: #ffffff;
+  --tg-card-muted: rgba(99, 102, 241, 0.05);
+  --tg-surface-hover: rgba(15, 23, 42, 0.05);
+  --tg-border: rgba(15, 23, 42, 0.08);
+  --tg-border-strong: rgba(15, 23, 42, 0.16);
+  --tg-divider: rgba(15, 23, 42, 0.06);
+  --tg-ring: rgba(99, 102, 241, 0.32);
+
+  --brand-1: #6366f1;
+  --brand-2: #8b5cf6;
+  --app-gradient-1: rgba(99, 102, 241, 0.14);
+  --app-gradient-2: rgba(168, 85, 247, 0.10);
+
   --radius-lg: 0.875rem;
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
-  --app-gradient-1: rgba(36, 129, 204, 0.12);
-  --app-gradient-2: rgba(56, 189, 248, 0.08);
 
-  /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 6px 18px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.12), 0 6px 14px rgba(15, 23, 42, 0.06);
 
-  /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --duration-fast: 120ms;
@@ -41,48 +48,91 @@
   --duration-slow: 320ms;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --tg-surface-hover: rgba(255, 255, 255, 0.06);
-    --tg-border: rgba(255, 255, 255, 0.1);
-    --tg-border-strong: rgba(255, 255, 255, 0.2);
-    --tg-divider: rgba(255, 255, 255, 0.08);
-    --tg-card-muted: rgba(255, 255, 255, 0.03);
-    --tg-ring: rgba(76, 185, 255, 0.34);
-    --app-gradient-1: rgba(36, 129, 204, 0.22);
-    --app-gradient-2: rgba(56, 189, 248, 0.14);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.5);
-    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
-  }
-}
-
+/* ---------- Dark palette ----------
+   Applied when the user explicitly picks dark (.dark class) OR when the
+   OS prefers dark AND no explicit preference is set.                   */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --tg-border-strong: rgba(255, 255, 255, 0.2);
-  --tg-card-muted: rgba(255, 255, 255, 0.03);
-  --tg-ring: rgba(76, 185, 255, 0.34);
-  --app-gradient-1: rgba(36, 129, 204, 0.22);
-  --app-gradient-2: rgba(56, 189, 248, 0.14);
+  --background: #0b1020;
+  --foreground: #e5e7ef;
+
+  --tg-bg: #0b1020;
+  --tg-text: #e5e7ef;
+  --tg-hint: #94a3b8;
+  --tg-link: #a5b4fc;
+  --tg-button: #818cf8;
+  --tg-button-text: #0b1020;
+  --tg-secondary-bg: #141a2e;
+  --tg-header-bg: #0b1020;
+
+  --tg-card-bg: #131a2e;
+  --tg-card-muted: rgba(129, 140, 248, 0.08);
+  --tg-surface-hover: rgba(255, 255, 255, 0.05);
+  --tg-border: rgba(148, 163, 184, 0.14);
+  --tg-border-strong: rgba(148, 163, 184, 0.28);
+  --tg-divider: rgba(148, 163, 184, 0.10);
+  --tg-ring: rgba(129, 140, 248, 0.40);
+
+  --brand-1: #818cf8;
+  --brand-2: #a78bfa;
+  --app-gradient-1: rgba(99, 102, 241, 0.22);
+  --app-gradient-2: rgba(168, 85, 247, 0.18);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.6), 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not(.light):not(.dark) {
+    --background: #0b1020;
+    --foreground: #e5e7ef;
+
+    --tg-bg: var(--tg-theme-bg-color, #0b1020);
+    --tg-text: var(--tg-theme-text-color, #e5e7ef);
+    --tg-hint: var(--tg-theme-hint-color, #94a3b8);
+    --tg-link: var(--tg-theme-link-color, #a5b4fc);
+    --tg-button: var(--tg-theme-button-color, #818cf8);
+    --tg-button-text: var(--tg-theme-button-text-color, #0b1020);
+    --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #141a2e);
+    --tg-header-bg: var(--tg-theme-header-bg-color, #0b1020);
+
+    --tg-card-bg: #131a2e;
+    --tg-card-muted: rgba(129, 140, 248, 0.08);
+    --tg-surface-hover: rgba(255, 255, 255, 0.05);
+    --tg-border: rgba(148, 163, 184, 0.14);
+    --tg-border-strong: rgba(148, 163, 184, 0.28);
+    --tg-divider: rgba(148, 163, 184, 0.10);
+    --tg-ring: rgba(129, 140, 248, 0.40);
+
+    --brand-1: #818cf8;
+    --brand-2: #a78bfa;
+    --app-gradient-1: rgba(99, 102, 241, 0.22);
+    --app-gradient-2: rgba(168, 85, 247, 0.18);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.6), 0 8px 20px rgba(0, 0, 0, 0.4);
   }
+}
+
+html,
+body {
+  background: var(--tg-bg);
 }
 
 body {
   color: var(--tg-text);
   background:
-    radial-gradient(110% 70% at 50% -16%, var(--app-gradient-1), transparent 62%),
-    radial-gradient(80% 50% at 85% 0%, var(--app-gradient-2), transparent 70%),
+    radial-gradient(120% 60% at 50% -10%, var(--app-gradient-1), transparent 60%),
+    radial-gradient(80% 50% at 90% 0%, var(--app-gradient-2), transparent 70%),
     var(--tg-bg);
+  background-attachment: fixed;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
   font-feature-settings: "ss01" on, "ss03" on, "cv02" on, "cv11" on;
+  transition:
+    background-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out);
 }
 
 ::selection {
@@ -106,7 +156,6 @@ body {
     top: 0;
     z-index: 20;
     border-bottom: 1px solid var(--tg-divider);
-    background: var(--tg-bg);
     background: color-mix(in srgb, var(--tg-bg) 86%, transparent);
     backdrop-filter: blur(14px);
   }
@@ -116,12 +165,29 @@ body {
     border-radius: var(--radius-2xl);
     background: var(--tg-card-bg);
     box-shadow: var(--shadow-sm);
+    transition:
+      background-color var(--duration-base) var(--ease-out),
+      border-color var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out);
   }
 
   .tf-card-muted {
     border: 1px solid var(--tg-border);
     border-radius: var(--radius-xl);
     background: var(--tg-card-muted);
+  }
+
+  /* Subtle branded hero card — used on the homepage greeting */
+  .tf-hero {
+    position: relative;
+    border: 1px solid var(--tg-border);
+    border-radius: var(--radius-2xl);
+    background:
+      radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--brand-2) 16%, transparent), transparent 55%),
+      radial-gradient(120% 140% at 0% 100%, color-mix(in srgb, var(--brand-1) 14%, transparent), transparent 55%),
+      var(--tg-card-bg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
   }
 
   .tf-input,
@@ -132,8 +198,10 @@ body {
     border-radius: var(--radius-lg);
     background: var(--tg-secondary-bg);
     color: var(--tg-text);
-    transition: border-color var(--duration-fast) var(--ease-out),
-      box-shadow var(--duration-fast) var(--ease-out);
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out),
+      background-color var(--duration-base) var(--ease-out);
   }
 
   .tf-input::placeholder,
@@ -153,7 +221,7 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid transparent;
+    border: 1px solid var(--tg-border);
     border-radius: 9999px;
     background: var(--tg-secondary-bg);
     color: var(--tg-text);
@@ -165,8 +233,9 @@ body {
   }
 
   .tf-chip-active {
-    background: var(--tg-button);
-    color: var(--tg-button-text);
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #ffffff;
     box-shadow: var(--shadow-sm);
   }
 
@@ -175,11 +244,17 @@ body {
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-xl);
-    background: var(--tg-button);
-    color: var(--tg-button-text);
-    transition: transform var(--duration-fast) var(--ease-out),
-      box-shadow var(--duration-fast) var(--ease-out);
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #ffffff;
+    transition:
+      transform var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out),
+      filter var(--duration-fast) var(--ease-out);
     box-shadow: var(--shadow-sm);
+  }
+
+  .tf-btn-primary:hover {
+    filter: brightness(1.05);
   }
 
   .tf-btn-primary:active {
@@ -209,8 +284,10 @@ body {
     border-radius: 9999px;
     background: var(--tg-secondary-bg);
     color: var(--tg-text);
-    transition: transform var(--duration-fast) var(--ease-out),
-      background var(--duration-fast) var(--ease-out);
+    transition:
+      transform var(--duration-fast) var(--ease-out),
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-base) var(--ease-out);
   }
 
   .tf-icon-btn:active {
@@ -219,6 +296,13 @@ body {
 
   .tf-subtle-text {
     color: var(--tg-hint);
+  }
+
+  .tf-brand-text {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
 
