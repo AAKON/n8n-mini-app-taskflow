@@ -222,7 +222,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   if (loading && !task) return <TaskDetailSkeleton />;
   if (loadError || !task) {
     return (
-      <div className="min-h-screen bg-[var(--tg-bg)] p-4 text-[var(--tg-text)]">
+      <div className="tf-page min-h-screen p-4 text-[var(--tg-text)]">
         <p className="text-sm text-red-500">{loadError ?? "Not found"}</p>
         <button type="button" className="mt-4 min-h-[44px] text-[var(--tg-link)]"
           onClick={() => { haptic("light"); router.push("/"); }}>
@@ -242,11 +242,11 @@ export function TaskDetail({ taskId }: { taskId: string }) {
 
   return (
     <div className={clsx(
-      "min-h-screen bg-[var(--tg-bg)] pb-32 text-[var(--tg-text)]",
+      "tf-page min-h-screen pb-32 text-[var(--tg-text)]",
     )}>
       {/* Header */}
       <header className={clsx(
-        "sticky top-0 z-20 border-b-4 bg-[var(--tg-bg)]/95 px-4 pb-3 pt-3 backdrop-blur",
+        "tf-topbar border-b-4 px-4 pb-3 pt-3",
         PRIORITY_ACCENT[task.priority],
       )}>
         <div className="flex items-start justify-between gap-3">
@@ -258,13 +258,13 @@ export function TaskDetail({ taskId }: { taskId: string }) {
             <h1 className="text-xl font-bold leading-tight">{task.title}</h1>
           </div>
           {canEdit ? (
-            <button
-              type="button"
-              onClick={() => { haptic("light"); setEditSheetOpen(true); }}
-              className="shrink-0 flex items-center gap-1.5 rounded-xl bg-[var(--tg-secondary-bg)] px-3 py-2 text-sm font-medium text-[var(--tg-text)] min-h-[44px]"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
+              <button
+                type="button"
+                onClick={() => { haptic("light"); setEditSheetOpen(true); }}
+                className="tf-btn-secondary shrink-0 flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-[var(--tg-text)]"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
             </button>
           ) : null}
         </div>
@@ -272,7 +272,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
 
       {/* Status stepper */}
       {canChangeStatus ? (
-        <div className="flex gap-1.5 border-b border-black/5 px-4 py-3 dark:border-white/10">
+        <div className="flex gap-1.5 border-b border-[var(--tg-divider)] px-4 py-3">
           {STATUS_TABS.map((s, i) => {
             const statuses: TaskStatus[] = ["todo", "in_progress", "review", "done"];
             const currentIdx = statuses.indexOf(task.status);
@@ -284,12 +284,12 @@ export function TaskDetail({ taskId }: { taskId: string }) {
                 type="button"
                 onClick={() => { if (!isActive) void updateTaskStatus(s.value); }}
                 className={clsx(
-                  "flex-1 rounded-xl py-2 text-xs font-semibold transition-colors",
+                  "flex-1 rounded-xl border py-2 text-xs font-semibold transition-colors",
                   isActive
-                    ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
+                    ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
                     : isPast
-                      ? "bg-[var(--tg-button)]/20 text-[var(--tg-button)]"
-                      : "bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)]",
+                      ? "border-transparent bg-[var(--tg-button)]/20 text-[var(--tg-button)]"
+                      : "border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)]",
                 )}
               >
                 {i + 1}. {s.label}
@@ -302,7 +302,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       <div className="space-y-5 px-4 py-4">
         {/* Metadata card */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center gap-2.5 rounded-2xl bg-[var(--tg-secondary-bg)] p-3">
+          <div className="tf-card flex items-center gap-2.5 p-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--tg-bg)]">
               <User className="h-4 w-4 text-[var(--tg-hint)]" />
             </div>
@@ -315,7 +315,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 rounded-2xl bg-[var(--tg-secondary-bg)] p-3">
+          <div className="tf-card flex items-center gap-2.5 p-3">
             <div className={clsx(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
               isOverdue ? "bg-red-100 dark:bg-red-900/30" : "bg-[var(--tg-bg)]",
@@ -331,7 +331,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
             </div>
           </div>
 
-          <div className="col-span-2 flex items-center gap-2.5 rounded-2xl bg-[var(--tg-secondary-bg)] p-3">
+          <div className="tf-card col-span-2 flex items-center gap-2.5 p-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--tg-bg)]">
               <Building2 className="h-4 w-4 text-[var(--tg-hint)]" />
             </div>
@@ -349,8 +349,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
             <h3 className="text-sm font-semibold">Description</h3>
           </div>
           <p className={clsx(
-            "whitespace-pre-wrap rounded-2xl p-3 text-sm leading-relaxed",
-            "bg-[var(--tg-secondary-bg)]",
+            "tf-card whitespace-pre-wrap rounded-2xl p-3 text-sm leading-relaxed",
             !task.description?.trim() && "text-[var(--tg-hint)] italic",
           )}>
             {task.description?.trim() || "No description."}
@@ -399,7 +398,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
                     user={{ _id: c.user?._id ?? "?", name: c.user?.name ?? "?", username: c.user?.username, avatarUrl: c.user?.avatarUrl }}
                     size="sm"
                   />
-                  <div className="min-w-0 flex-1 rounded-2xl rounded-tl-sm bg-[var(--tg-secondary-bg)] px-3 py-2.5">
+                  <div className="tf-card min-w-0 flex-1 rounded-2xl rounded-tl-sm px-3 py-2.5">
                     <div className="mb-1 flex flex-wrap items-baseline gap-2">
                       <span className="text-xs font-semibold">{c.user?.name ?? "Unknown"}</span>
                       <time className="text-[10px] text-[var(--tg-hint)]" dateTime={c.createdAt}>
@@ -420,12 +419,12 @@ export function TaskDetail({ taskId }: { taskId: string }) {
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Write a comment…"
-              className="min-h-[44px] flex-1 rounded-2xl border border-black/10 bg-[var(--tg-secondary-bg)] px-4 text-sm dark:border-white/10"
+              className="tf-input min-h-[44px] flex-1 rounded-2xl px-4 text-sm"
             />
             <button
               type="submit"
               disabled={commentSending || !commentText.trim()}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--tg-button)] text-[var(--tg-button-text)] disabled:opacity-40"
+              className="tf-btn-primary flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:opacity-40"
             >
               <Send className="h-4 w-4" />
             </button>
@@ -450,7 +449,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       {/* Sticky action bar */}
       {canChangeStatus && task.status !== "done" ? (
         <div
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--tg-border)] bg-[var(--tg-bg)]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--tg-divider)] bg-[var(--tg-bg)]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur"
           style={{ boxShadow: "var(--shadow-lg)" }}
         >
           <button

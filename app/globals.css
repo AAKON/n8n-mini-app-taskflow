@@ -17,7 +17,16 @@
   /* Subtle surface overlays — replace ad-hoc black/5, white/10 */
   --tg-surface-hover: rgba(0, 0, 0, 0.04);
   --tg-border: rgba(0, 0, 0, 0.08);
+  --tg-border-strong: rgba(0, 0, 0, 0.14);
   --tg-divider: rgba(0, 0, 0, 0.06);
+  --tg-card-bg: var(--tg-secondary-bg);
+  --tg-card-muted: rgba(255, 255, 255, 0.6);
+  --tg-ring: rgba(36, 129, 204, 0.32);
+  --radius-lg: 0.875rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --app-gradient-1: rgba(36, 129, 204, 0.12);
+  --app-gradient-2: rgba(56, 189, 248, 0.08);
 
   /* Elevation */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
@@ -36,7 +45,12 @@
   :root {
     --tg-surface-hover: rgba(255, 255, 255, 0.06);
     --tg-border: rgba(255, 255, 255, 0.1);
+    --tg-border-strong: rgba(255, 255, 255, 0.2);
     --tg-divider: rgba(255, 255, 255, 0.08);
+    --tg-card-muted: rgba(255, 255, 255, 0.03);
+    --tg-ring: rgba(76, 185, 255, 0.34);
+    --app-gradient-1: rgba(36, 129, 204, 0.22);
+    --app-gradient-2: rgba(56, 189, 248, 0.14);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.5);
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
@@ -46,6 +60,11 @@
 .dark {
   --background: #0a0a0a;
   --foreground: #ededed;
+  --tg-border-strong: rgba(255, 255, 255, 0.2);
+  --tg-card-muted: rgba(255, 255, 255, 0.03);
+  --tg-ring: rgba(76, 185, 255, 0.34);
+  --app-gradient-1: rgba(36, 129, 204, 0.22);
+  --app-gradient-2: rgba(56, 189, 248, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -57,7 +76,150 @@
 
 body {
   color: var(--tg-text);
-  background: var(--tg-bg);
+  background:
+    radial-gradient(110% 70% at 50% -16%, var(--app-gradient-1), transparent 62%),
+    radial-gradient(80% 50% at 85% 0%, var(--app-gradient-2), transparent 70%),
+    var(--tg-bg);
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "ss01" on, "ss03" on, "cv02" on, "cv11" on;
+}
+
+::selection {
+  background: var(--tg-ring);
+  color: var(--tg-text);
+}
+
+:where(button, [role="button"], a, input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--tg-bg), 0 0 0 4px var(--tg-ring);
+}
+
+@layer components {
+  .tf-page {
+    min-height: 100vh;
+    color: var(--tg-text);
+  }
+
+  .tf-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid var(--tg-divider);
+    background: var(--tg-bg);
+    background: color-mix(in srgb, var(--tg-bg) 86%, transparent);
+    backdrop-filter: blur(14px);
+  }
+
+  .tf-card {
+    border: 1px solid var(--tg-border);
+    border-radius: var(--radius-2xl);
+    background: var(--tg-card-bg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tf-card-muted {
+    border: 1px solid var(--tg-border);
+    border-radius: var(--radius-xl);
+    background: var(--tg-card-muted);
+  }
+
+  .tf-input,
+  .tf-select,
+  .tf-textarea {
+    width: 100%;
+    border: 1px solid var(--tg-border);
+    border-radius: var(--radius-lg);
+    background: var(--tg-secondary-bg);
+    color: var(--tg-text);
+    transition: border-color var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out);
+  }
+
+  .tf-input::placeholder,
+  .tf-textarea::placeholder {
+    color: var(--tg-hint);
+  }
+
+  .tf-input:focus,
+  .tf-select:focus,
+  .tf-textarea:focus {
+    border-color: var(--tg-border-strong);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--tg-ring);
+  }
+
+  .tf-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    background: var(--tg-secondary-bg);
+    color: var(--tg-text);
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .tf-chip:hover {
+    background: var(--tg-surface-hover);
+  }
+
+  .tf-chip-active {
+    background: var(--tg-button);
+    color: var(--tg-button-text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tf-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-xl);
+    background: var(--tg-button);
+    color: var(--tg-button-text);
+    transition: transform var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tf-btn-primary:active {
+    transform: scale(0.985);
+  }
+
+  .tf-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--tg-border);
+    border-radius: var(--radius-xl);
+    background: var(--tg-secondary-bg);
+    color: var(--tg-text);
+    transition: background var(--duration-fast) var(--ease-out);
+  }
+
+  .tf-btn-secondary:hover {
+    background: var(--tg-surface-hover);
+  }
+
+  .tf-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--tg-border);
+    border-radius: 9999px;
+    background: var(--tg-secondary-bg);
+    color: var(--tg-text);
+    transition: transform var(--duration-fast) var(--ease-out),
+      background var(--duration-fast) var(--ease-out);
+  }
+
+  .tf-icon-btn:active {
+    transform: scale(0.96);
+  }
+
+  .tf-subtle-text {
+    color: var(--tg-hint);
+  }
 }
 
 @keyframes toast-in {

@@ -10,7 +10,7 @@ export default function TaskDetailPage() {
 
   if (!id) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--tg-bg)]">
+      <div className="tf-page flex min-h-screen items-center justify-center">
         <Spinner />
       </div>
     );

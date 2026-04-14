@@ -107,7 +107,7 @@ export function BottomSheet({
       role="presentation"
     >
       <div
-        className="absolute inset-0 cursor-pointer bg-black/40 transition-opacity"
+        className="absolute inset-0 cursor-pointer bg-black/45 backdrop-blur-[2px] transition-opacity"
         aria-hidden
         onClick={onClose}
         onKeyDown={(e) => {
@@ -121,7 +121,7 @@ export function BottomSheet({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         className={clsx(
-          "relative mt-auto max-h-[85vh] translate-y-0 overflow-hidden rounded-t-2xl bg-[var(--tg-bg)] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] transition-transform duration-200 ease-out",
+          "relative mt-auto max-h-[85vh] translate-y-0 overflow-hidden rounded-t-[1.4rem] border-x border-t border-[var(--tg-border)] bg-[var(--tg-bg)] shadow-[var(--shadow-lg)] transition-transform duration-200 ease-out",
           className,
         )}
         tabIndex={-1}
@@ -133,12 +133,12 @@ export function BottomSheet({
           onPointerUp={onPointerUpHandle}
           onPointerCancel={onPointerUpHandle}
         >
-          <span className="h-1 w-10 rounded-full bg-[var(--tg-hint)]/50" />
+          <span className="h-1 w-10 rounded-full bg-[var(--tg-border-strong)]" />
         </div>
         {title ? (
           <h2
             id={titleId}
-            className="border-b border-[var(--tg-secondary-bg)] px-4 pb-3 text-base font-semibold text-[var(--tg-text)]"
+            className="border-b border-[var(--tg-divider)] px-4 pb-3 text-base font-semibold text-[var(--tg-text)]"
           >
             {title}
           </h2>

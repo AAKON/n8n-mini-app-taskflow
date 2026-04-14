@@ -161,7 +161,7 @@ export function UserEditSheet({
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="min-h-[44px] rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm text-[var(--tg-text)] dark:border-white/10"
+            className="tf-input min-h-[44px] px-3 text-sm"
           />
         </label>
 
@@ -171,7 +171,7 @@ export function UserEditSheet({
             value={role}
             onChange={(e) => setRole(e.target.value as Role)}
             disabled={isSelf}
-            className="min-h-[44px] rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-2 text-sm text-[var(--tg-text)] disabled:opacity-50 dark:border-white/10"
+            className="tf-select min-h-[44px] px-2 text-sm disabled:opacity-50"
           >
             {ROLES.map((r) => (
               <option key={r} value={r}>
@@ -191,7 +191,7 @@ export function UserEditSheet({
           <select
             value={departmentPath}
             onChange={(e) => setDepartmentPath(e.target.value)}
-            className="min-h-[44px] rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-2 text-sm text-[var(--tg-text)] dark:border-white/10"
+            className="tf-select min-h-[44px] px-2 text-sm"
           >
             <option value="">— None —</option>
             {sortedDepts.map((d) => (
@@ -208,7 +208,7 @@ export function UserEditSheet({
           type="button"
           disabled={submitting}
           onClick={() => void save()}
-          className="mt-2 min-h-[48px] rounded-lg bg-[var(--tg-button)] text-sm font-medium text-[var(--tg-button-text)] disabled:opacity-50"
+          className="tf-btn-primary mt-2 min-h-[48px] rounded-lg text-sm font-medium disabled:opacity-50"
         >
           {submitting ? "Saving…" : "Save"}
         </button>

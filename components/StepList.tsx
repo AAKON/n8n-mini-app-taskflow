@@ -108,7 +108,7 @@ export function StepList({ taskId, steps, canEdit, token, onStepsChange }: StepL
 
       {/* Progress bar */}
       {total > 0 ? (
-        <div className="h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+        <div className="h-2 overflow-hidden rounded-full bg-[var(--tg-border)]">
           <div
             className={clsx(
               "h-full rounded-full transition-[width] duration-300",
@@ -129,8 +129,8 @@ export function StepList({ taskId, steps, canEdit, token, onStepsChange }: StepL
                 disabled={!canEdit || !!pending || !!deleting}
                 onClick={() => void toggle(s)}
                 className={clsx(
-                  "flex min-h-[44px] flex-1 items-center gap-3 rounded-xl px-3 py-2 text-left transition",
-                  "bg-[var(--tg-secondary-bg)]",
+                  "flex min-h-[44px] flex-1 items-center gap-3 rounded-xl border border-[var(--tg-border)] px-3 py-2 text-left transition",
+                  "bg-[var(--tg-card-bg)]",
                   canEdit ? "active:opacity-75" : "opacity-90",
                   s.done && "opacity-70",
                 )}
@@ -172,12 +172,12 @@ export function StepList({ taskId, steps, canEdit, token, onStepsChange }: StepL
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="Add a step…"
-            className="min-h-[44px] flex-1 rounded-xl border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm text-[var(--tg-text)] placeholder:text-[var(--tg-hint)] dark:border-white/10"
+            className="tf-input min-h-[44px] flex-1 rounded-xl px-3 text-sm"
           />
           <button
             type="submit"
             disabled={adding || !newTitle.trim()}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--tg-button)] text-[var(--tg-button-text)] disabled:opacity-50"
+            className="tf-btn-primary flex h-11 w-11 shrink-0 items-center justify-center rounded-xl disabled:opacity-50"
           >
             <Plus className="h-5 w-5" />
           </button>

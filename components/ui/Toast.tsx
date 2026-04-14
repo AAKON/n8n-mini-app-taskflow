@@ -28,12 +28,13 @@ export function ToastContainer() {
           type="button"
           onClick={() => dismiss(t.id)}
           className={clsx(
-            "animate-toast-in pointer-events-auto mx-auto w-full max-w-md rounded-xl px-4 py-3 text-left text-sm font-medium shadow-lg",
+            "animate-toast-in pointer-events-auto mx-auto w-full max-w-lg rounded-2xl border px-4 py-3 text-left text-sm font-medium shadow-[var(--shadow-lg)]",
             t.type === "success" &&
-              "bg-emerald-600/95 text-white dark:bg-emerald-700/95",
-            t.type === "error" && "bg-red-600/95 text-white dark:bg-red-700/95",
+              "border-emerald-400/40 bg-emerald-600/95 text-white dark:border-emerald-300/30 dark:bg-emerald-700/95",
+            t.type === "error" &&
+              "border-red-400/40 bg-red-600/95 text-white dark:border-red-300/30 dark:bg-red-700/95",
             t.type === "info" &&
-              "bg-sky-600/95 text-white dark:bg-sky-700/95",
+              "border-sky-400/40 bg-sky-600/95 text-white dark:border-sky-300/30 dark:bg-sky-700/95",
           )}
         >
           {t.message}

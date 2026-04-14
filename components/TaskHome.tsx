@@ -198,10 +198,10 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   const canCreate = hasRole(user.role, "manager");
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--tg-bg)] pt-2">
+    <div className="tf-page flex min-h-screen flex-col pt-2">
       {/* Tab bar */}
       {showTeamTab ? (
-        <div className="sticky top-0 z-10 flex gap-1 border-b border-[var(--tg-border)] bg-[var(--tg-bg)]/95 px-3 pb-2 backdrop-blur">
+        <div className="tf-topbar flex gap-1 px-3 pb-2">
           <TabButton active={tab === "my"} disabled={isLoading && tasks.length === 0} onClick={() => setTab("my")} label="My Tasks" />
           <TabButton active={tab === "team"} disabled={isLoading && tasks.length === 0} onClick={() => setTab("team")} label="Team" />
           {showAllTab ? (
@@ -219,14 +219,14 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search tasks…"
-            className="min-h-[40px] w-full rounded-full bg-[var(--tg-secondary-bg)] py-2 pl-9 pr-9 text-sm text-[var(--tg-text)] placeholder:text-[var(--tg-hint)]"
+            className="tf-input min-h-[42px] rounded-xl py-2 pl-9 pr-9 text-sm"
           />
           {searchInput ? (
             <button
               type="button"
               onClick={() => { setSearchInput(""); setSearch(""); }}
               aria-label="Clear search"
-              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--tg-hint)]"
+              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--tg-hint)] transition-colors hover:bg-[var(--tg-surface-hover)]"
             >
               <X className="h-4 w-4" />
             </button>
@@ -247,8 +247,8 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
                 "shrink-0 rounded-full px-3 py-2 text-sm font-medium transition",
                 "min-h-[40px]",
                 status === o.value
-                  ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-                  : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+                  ? "tf-chip tf-chip-active"
+                  : "tf-chip",
                 isLoading && tasks.length === 0 && "opacity-50",
               )}
             >
@@ -262,9 +262,9 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
           type="button"
           onClick={() => { haptic("light"); setShowFilters((v) => !v); }}
           className={clsx(
-            "relative shrink-0 flex h-10 w-10 items-center justify-center rounded-full transition",
+            "relative shrink-0 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--tg-border)] transition",
             showFilters || activeFilterCount > 0
-              ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
+              ? "bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
               : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
           )}
         >
@@ -279,7 +279,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
 
       {/* Expanded filters panel */}
       {showFilters ? (
-        <div className="mx-3 mb-2 rounded-2xl bg-[var(--tg-secondary-bg)] p-3 space-y-3">
+        <div className="tf-card mx-3 mb-2 space-y-3 p-3">
           {/* Due date */}
           <div>
             <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">Due date</p>
@@ -292,8 +292,8 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
                   className={clsx(
                     "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
                     dueFilter === o.value
-                      ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-                      : "bg-black/5 text-[var(--tg-text)] dark:bg-white/10",
+                      ? "tf-chip tf-chip-active"
+                      : "tf-chip",
                   )}
                 >
                   {o.label}
@@ -310,29 +310,29 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
                 <button
                   type="button"
                   onClick={() => { haptic("light"); setDeptFilter(""); }}
-                  className={clsx(
-                    "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
-                    !deptFilter
-                      ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-                      : "bg-black/5 text-[var(--tg-text)] dark:bg-white/10",
-                  )}
-                >
-                  All
-                </button>
+                   className={clsx(
+                     "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
+                     !deptFilter
+                       ? "tf-chip tf-chip-active"
+                       : "tf-chip",
+                   )}
+                 >
+                   All
+                 </button>
                 {[...departments].sort((a, b) => a.path.localeCompare(b.path)).map((d) => (
                   <button
                     key={d._id}
                     type="button"
                     onClick={() => { haptic("light"); setDeptFilter(deptFilter === d.path ? "" : d.path); }}
-                    className={clsx(
-                      "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
-                      deptFilter === d.path
-                        ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-                        : "bg-black/5 text-[var(--tg-text)] dark:bg-white/10",
-                    )}
-                  >
-                    {d.name}
-                  </button>
+                     className={clsx(
+                       "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
+                       deptFilter === d.path
+                         ? "tf-chip tf-chip-active"
+                         : "tf-chip",
+                     )}
+                   >
+                     {d.name}
+                   </button>
                 ))}
               </div>
             </div>
@@ -439,7 +439,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
               <button
                 type="button"
                 disabled={isLoadingMore}
-                className="mx-auto mb-8 min-h-[44px] rounded-full px-4 py-2 text-sm text-[var(--tg-link)] disabled:opacity-50"
+                className="tf-btn-secondary mx-auto mb-8 min-h-[44px] rounded-full px-4 py-2 text-sm text-[var(--tg-link)] disabled:opacity-50"
                 onClick={() => { haptic("light"); void loadMore(); }}
               >
                 Load more
@@ -455,8 +455,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
           type="button"
           aria-label="Create task"
           className={clsx(
-            "fixed right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full shadow-lg",
-            "bg-[var(--tg-button)] text-[var(--tg-button-text)]",
+            "tf-btn-primary fixed right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full shadow-[var(--shadow-lg)]",
             "min-h-[44px] min-w-[44px] transition active:scale-95",
             "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]",
           )}
@@ -487,10 +486,10 @@ function TabButton(props: {
       disabled={props.disabled}
       onClick={() => { haptic("light"); props.onClick(); }}
       className={clsx(
-        "min-h-[44px] flex-1 rounded-xl px-2 py-2 text-sm font-medium transition",
+        "min-h-[44px] flex-1 rounded-xl border px-2 py-2 text-sm font-medium transition",
         props.active
-          ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-          : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+          ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
+          : "border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
         props.disabled && "opacity-50",
       )}
     >

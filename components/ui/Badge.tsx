@@ -87,7 +87,7 @@ export function Badge(props: BadgeProps) {
   return (
     <span
       className={clsx(
-        "inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium leading-none",
+        "inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--tg-border)] px-2 py-0.5 text-xs font-medium leading-none",
         pill,
         props.className,
       )}

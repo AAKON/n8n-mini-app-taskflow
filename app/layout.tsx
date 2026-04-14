@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
 import { AppProviders } from "@/components/app-providers";
@@ -20,12 +20,15 @@ export const metadata: Metadata = {
   title: "TaskFlow",
   description: "Telegram Mini App — tasks and teams",
   manifest: "/manifest.json",
-  themeColor: "#2481cc",
   appleWebApp: {
     capable: true,
     title: "TaskFlow",
     statusBarStyle: "default",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2481cc",
 };
 
 export default function RootLayout({

@@ -142,18 +142,18 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--tg-bg)] text-[var(--tg-text)]">
-      <header className="sticky top-0 z-10 border-b border-black/5 bg-[var(--tg-bg)]/95 px-4 py-3 backdrop-blur dark:border-white/10">
+    <div className="tf-page min-h-screen text-[var(--tg-text)]">
+      <header className="tf-topbar px-4 py-3">
         <h1 className="text-lg font-bold">Admin</h1>
-        <div className="mt-3 flex gap-1 rounded-lg bg-[var(--tg-secondary-bg)] p-1">
+        <div className="mt-3 flex gap-1 rounded-lg border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] p-1">
           <button
             type="button"
             onClick={() => setTab("users")}
             className={clsx(
-              "min-h-[40px] flex-1 rounded-md text-sm font-medium",
+              "min-h-[40px] flex-1 rounded-md border text-sm font-medium transition",
               tab === "users"
-                ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-                : "text-[var(--tg-text)]",
+                ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
+                : "border-transparent text-[var(--tg-text)]",
             )}
           >
             Users
@@ -162,10 +162,10 @@ export default function AdminPage() {
             type="button"
             onClick={() => setTab("stats")}
             className={clsx(
-              "min-h-[40px] flex-1 rounded-md text-sm font-medium",
+              "min-h-[40px] flex-1 rounded-md border text-sm font-medium transition",
               tab === "stats"
-                ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-                : "text-[var(--tg-text)]",
+                ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
+                : "border-transparent text-[var(--tg-text)]",
             )}
           >
             Stats
@@ -181,7 +181,7 @@ export default function AdminPage() {
           {loadingUsers ? (
             <Spinner className="min-h-[40vh]" />
           ) : (
-            <ul className="divide-y divide-black/5 dark:divide-white/10">
+            <ul className="space-y-2">
               {users.map((u) => (
                 <li key={u._id}>
                   <button
@@ -190,7 +190,7 @@ export default function AdminPage() {
                       setEditUser(u);
                       setSheetOpen(true);
                     }}
-                    className="flex w-full min-h-[56px] items-center gap-3 py-2 text-left"
+                    className="tf-card flex w-full min-h-[56px] items-center gap-3 px-3 py-2 text-left"
                   >
                     <Avatar user={u} size="md" />
                     <div className="min-w-0 flex-1">
@@ -220,7 +220,7 @@ export default function AdminPage() {
             <Spinner className="min-h-[40vh]" />
           ) : summary ? (
             <>
-              <section className="rounded-xl border border-black/5 bg-[var(--tg-secondary-bg)] p-4 dark:border-white/10">
+              <section className="tf-card rounded-xl p-4">
                 <p className="text-xs font-medium text-[var(--tg-hint)]">
                   Total tasks
                 </p>
@@ -229,7 +229,7 @@ export default function AdminPage() {
                 </p>
               </section>
 
-              <section className="rounded-xl border border-black/5 bg-[var(--tg-secondary-bg)] p-4 dark:border-white/10">
+              <section className="tf-card rounded-xl p-4">
                 <p className="mb-3 text-sm font-semibold">By status</p>
                 <ul className="space-y-3">
                   {STATUS_ORDER.map((s) => {
@@ -246,7 +246,7 @@ export default function AdminPage() {
                             {n} ({pct}%)
                           </span>
                         </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                        <div className="h-2 overflow-hidden rounded-full bg-[var(--tg-border)]">
                           <div
                             className="h-full rounded-full bg-[var(--tg-button)] transition-[width]"
                             style={{ width: `${pct}%` }}
@@ -259,7 +259,7 @@ export default function AdminPage() {
               </section>
 
               <div className="grid grid-cols-2 gap-3">
-                <section className="rounded-xl border border-black/5 bg-[var(--tg-secondary-bg)] p-4 dark:border-white/10">
+                <section className="tf-card rounded-xl p-4">
                   <p className="text-xs font-medium text-[var(--tg-hint)]">
                     Overdue
                   </p>
@@ -267,7 +267,7 @@ export default function AdminPage() {
                     {summary.overdue}
                   </p>
                 </section>
-                <section className="rounded-xl border border-black/5 bg-[var(--tg-secondary-bg)] p-4 dark:border-white/10">
+                <section className="tf-card rounded-xl p-4">
                   <p className="text-xs font-medium text-[var(--tg-hint)]">
                     Active members
                   </p>

@@ -17,21 +17,23 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--tg-bg)] px-6 text-center text-[var(--tg-text)]">
-      <h1 className="text-lg font-semibold">Something went wrong</h1>
-      <p className="max-w-sm text-sm text-[var(--tg-hint)]">
-        {error.message || "An unexpected error occurred."}
-      </p>
-      <button
-        type="button"
-        onClick={() => {
-          haptic("light");
-          reset();
-        }}
-        className="min-h-[44px] rounded-xl bg-[var(--tg-button)] px-6 text-sm font-medium text-[var(--tg-button-text)]"
-      >
-        Try again
-      </button>
+    <div className="tf-page flex min-h-screen items-center justify-center px-6">
+      <div className="tf-card w-full max-w-md px-6 py-8 text-center">
+        <h1 className="text-lg font-semibold">Something went wrong</h1>
+        <p className="mt-2 text-sm text-[var(--tg-hint)]">
+          {error.message || "An unexpected error occurred."}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            haptic("light");
+            reset();
+          }}
+          className="tf-btn-primary mt-5 min-h-[44px] w-full px-6 text-sm font-medium"
+        >
+          Try again
+        </button>
+      </div>
     </div>
   );
 }

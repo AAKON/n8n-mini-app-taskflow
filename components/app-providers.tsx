@@ -110,12 +110,14 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <StoreProvider>
       {isLoading ? (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-[var(--tg-bg)] text-[var(--tg-text)]">
-          <div
-            className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--tg-hint)] border-t-[var(--tg-button)]"
-            aria-hidden
-          />
-          <p className="text-sm text-[var(--tg-hint)]">Loading…</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--tg-bg)]/95 px-6 text-[var(--tg-text)] backdrop-blur-sm">
+          <div className="tf-card w-full max-w-xs px-6 py-5 text-center">
+            <div
+              className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[var(--tg-border-strong)] border-t-[var(--tg-button)]"
+              aria-hidden
+            />
+            <p className="mt-3 text-sm text-[var(--tg-hint)]">Loading…</p>
+          </div>
         </div>
       ) : (
         children

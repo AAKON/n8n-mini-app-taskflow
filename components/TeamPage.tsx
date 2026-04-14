@@ -99,10 +99,10 @@ export function TeamPage() {
   const sortedDepts = [...departments].sort((a, b) => a.path.localeCompare(b.path));
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--tg-bg)] text-[var(--tg-text)]">
+    <div className="tf-page flex min-h-screen flex-col text-[var(--tg-text)]">
       {/* Search bar */}
       <div className="px-3 pt-3">
-        <div className="flex items-center gap-2 rounded-2xl bg-[var(--tg-secondary-bg)] px-3">
+        <div className="tf-card flex items-center gap-2 px-3 py-1">
           <Search className="h-4 w-4 shrink-0 text-[var(--tg-hint)]" />
           <input
             value={search}
@@ -114,7 +114,7 @@ export function TeamPage() {
             <button
               type="button"
               onClick={() => setSearch("")}
-              className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10 text-xs text-[var(--tg-hint)] dark:bg-white/10"
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--tg-surface-hover)] text-xs text-[var(--tg-hint)]"
             >
               ✕
             </button>
@@ -128,10 +128,10 @@ export function TeamPage() {
           type="button"
           onClick={() => { haptic("light"); setDeptFilter(""); }}
           className={clsx(
-            "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
+            "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
             !deptFilter
-              ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-              : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+              ? "tf-chip-active"
+              : "",
           )}
         >
           All
@@ -142,10 +142,10 @@ export function TeamPage() {
             type="button"
             onClick={() => { haptic("light"); setDeptFilter(deptFilter === d.path ? "" : d.path); }}
             className={clsx(
-              "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
+              "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
               deptFilter === d.path
-                ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-                : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+                ? "tf-chip-active"
+                : "",
             )}
           >
             {d.name}
@@ -163,11 +163,11 @@ export function TeamPage() {
         {loading ? (
           <div className="flex flex-col gap-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg)] p-3 animate-pulse">
-                <div className="h-12 w-12 rounded-full bg-[var(--tg-hint)]/20" />
+              <div key={i} className="tf-card flex items-center gap-3 p-3 animate-pulse">
+                <div className="h-12 w-12 rounded-full bg-[var(--tg-border)]" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 w-2/5 rounded bg-[var(--tg-hint)]/20" />
-                  <div className="h-2.5 w-1/3 rounded bg-[var(--tg-hint)]/10" />
+                  <div className="h-3 w-2/5 rounded bg-[var(--tg-border)]" />
+                  <div className="h-2.5 w-1/3 rounded bg-[var(--tg-border)]" />
                 </div>
               </div>
             ))}
@@ -183,7 +183,7 @@ export function TeamPage() {
             {sorted.map((u) => (
               <li
                 key={u._id}
-                className="flex items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg)] px-3 py-3"
+                className="tf-card flex items-center gap-3 px-3 py-3"
               >
                 <Avatar user={u} size="md" />
                 <div className="min-w-0 flex-1">

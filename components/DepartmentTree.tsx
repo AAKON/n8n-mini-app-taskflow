@@ -64,7 +64,7 @@ export function DepartmentTree({
   }
 
   return (
-    <div className="divide-y divide-black/5 dark:divide-white/10">
+    <div className="space-y-2">
       {nodes.map((n) => (
         <TreeRows
           key={n.path}
@@ -117,7 +117,7 @@ function TreeRows({
   return (
     <>
       <div
-        className="flex min-h-[52px] items-start gap-1 py-2"
+        className="tf-card flex min-h-[52px] items-start gap-1 py-2"
         style={{ paddingLeft: pad }}
       >
         <div className="mt-0.5 flex h-9 w-9 shrink-0 justify-center">
@@ -128,7 +128,7 @@ function TreeRows({
                 e.stopPropagation();
                 toggle(node.path);
               }}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--tg-hint)]"
+              className="tf-icon-btn flex h-9 w-9 items-center justify-center rounded-lg text-[var(--tg-hint)]"
               aria-expanded={isExpanded}
               aria-label={isExpanded ? "Collapse" : "Expand"}
             >
@@ -165,7 +165,7 @@ function TreeRows({
                 e.stopPropagation();
                 onEdit?.(node);
               }}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]"
+              className="tf-btn-secondary flex h-9 w-9 items-center justify-center rounded-lg text-[var(--tg-text)]"
               aria-label="Edit department"
             >
               <Pencil className="h-4 w-4" />
@@ -176,7 +176,7 @@ function TreeRows({
                 e.stopPropagation();
                 onAddChild?.(node);
               }}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]"
+              className="tf-btn-secondary flex h-9 w-9 items-center justify-center rounded-lg text-[var(--tg-text)]"
               aria-label="Add child department"
             >
               <Plus className="h-4 w-4" />

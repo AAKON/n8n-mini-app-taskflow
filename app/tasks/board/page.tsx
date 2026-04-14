@@ -78,13 +78,13 @@ export default function BoardPage() {
   if (!token || !user) return <SignInNotice />;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--tg-bg)] pt-3">
+    <div className="tf-page flex min-h-screen flex-col pt-3">
       <div className="mb-3 flex items-center justify-between px-4">
         <h1 className="text-lg font-bold text-[var(--tg-text)]">Board</h1>
         <button
           type="button"
           onClick={() => { haptic("light"); router.push("/"); }}
-          className="rounded-full bg-[var(--tg-secondary-bg)] px-3 py-1.5 text-xs text-[var(--tg-text)]"
+          className="tf-btn-secondary rounded-full px-3 py-1.5 text-xs text-[var(--tg-text)]"
         >
           List view
         </button>
@@ -107,7 +107,7 @@ export default function BoardPage() {
                   setDragOver(null);
                 }}
                 className={clsx(
-                  "flex w-72 shrink-0 flex-col rounded-2xl bg-[var(--tg-secondary-bg)]/50 p-2",
+                  "flex w-72 shrink-0 flex-col rounded-2xl border border-[var(--tg-border)] bg-[var(--tg-card-muted)] p-2",
                   dragOver === col.status && "ring-2 ring-[var(--tg-button)]",
                 )}
               >
@@ -125,7 +125,7 @@ export default function BoardPage() {
                       onDragStart={() => setDragId(t._id)}
                       onDragEnd={() => setDragId(null)}
                       onClick={() => router.push(`/tasks/${t._id}`)}
-                      className="cursor-grab rounded-xl bg-[var(--tg-bg)] p-3 text-left text-[var(--tg-text)] shadow-[var(--shadow-sm)] active:cursor-grabbing"
+                      className="cursor-grab rounded-xl border border-[var(--tg-border)] bg-[var(--tg-card-bg)] p-3 text-left text-[var(--tg-text)] shadow-[var(--shadow-sm)] transition hover:shadow-[var(--shadow-md)] active:cursor-grabbing"
                     >
                       <p className="line-clamp-2 text-sm font-medium">{t.title}</p>
                       {t.departmentPath ? (

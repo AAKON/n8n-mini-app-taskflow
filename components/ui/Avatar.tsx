@@ -47,7 +47,7 @@ export function Avatar({ user, size = "md", className }: AvatarProps) {
     return (
       <span
         className={clsx(
-          "relative inline-block overflow-hidden rounded-full ring-1 ring-black/10 dark:ring-white/10",
+          "relative inline-block overflow-hidden rounded-full ring-1 ring-[var(--tg-border)]",
           box,
           className,
         )}
@@ -67,7 +67,7 @@ export function Avatar({ user, size = "md", className }: AvatarProps) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center justify-center rounded-full font-semibold text-white ring-1 ring-black/10 dark:ring-white/10",
+        "inline-flex items-center justify-center rounded-full font-semibold text-white ring-1 ring-[var(--tg-border)]",
         box,
         className,
       )}

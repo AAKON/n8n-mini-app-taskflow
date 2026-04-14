@@ -258,15 +258,15 @@ export default function DepartmentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--tg-bg)] pb-28 text-[var(--tg-text)]">
-      <div className="sticky top-0 z-10 border-b border-black/5 bg-[var(--tg-bg)]/95 px-4 py-3 backdrop-blur dark:border-white/10">
+    <div className="tf-page min-h-screen pb-28 text-[var(--tg-text)]">
+      <div className="tf-topbar px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-lg font-bold">Departments</h1>
           {isAdmin ? (
             <button
               type="button"
               onClick={() => openAdd("")}
-              className="min-h-[44px] rounded-lg bg-[var(--tg-button)] px-3 text-sm font-medium text-[var(--tg-button-text)]"
+              className="tf-btn-primary min-h-[44px] rounded-lg px-3 text-sm font-medium"
             >
               Add department
             </button>
@@ -300,7 +300,7 @@ export default function DepartmentsPage() {
             <input
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
-              className="min-h-[44px] rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm text-[var(--tg-text)] dark:border-white/10"
+              className="tf-input min-h-[44px] px-3 text-sm"
               placeholder="e.g. Backend"
             />
           </label>
@@ -309,7 +309,7 @@ export default function DepartmentsPage() {
             <select
               value={addParentPath}
               onChange={(e) => setAddParentPath(e.target.value)}
-              className="min-h-[44px] rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-2 text-sm text-[var(--tg-text)] dark:border-white/10"
+              className="tf-select min-h-[44px] px-2 text-sm"
             >
               <option value="">— Root —</option>
               {flatDepts.map((d) => (
@@ -326,7 +326,7 @@ export default function DepartmentsPage() {
             type="button"
             disabled={addSubmitting}
             onClick={() => void submitAdd()}
-            className="mt-2 min-h-[48px] rounded-lg bg-[var(--tg-button)] text-sm font-medium text-[var(--tg-button-text)] disabled:opacity-50"
+            className="tf-btn-primary mt-2 min-h-[48px] rounded-lg text-sm font-medium disabled:opacity-50"
           >
             {addSubmitting ? "Creating…" : "Create"}
           </button>
@@ -344,7 +344,7 @@ export default function DepartmentsPage() {
             <input
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="min-h-[44px] rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm text-[var(--tg-text)] dark:border-white/10"
+              className="tf-input min-h-[44px] px-3 text-sm"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-[var(--tg-hint)]">
@@ -352,7 +352,7 @@ export default function DepartmentsPage() {
             <select
               value={editHeadId}
               onChange={(e) => setEditHeadId(e.target.value)}
-              className="min-h-[44px] rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-2 text-sm text-[var(--tg-text)] dark:border-white/10"
+              className="tf-select min-h-[44px] px-2 text-sm"
             >
               <option value="">— None —</option>
               {sortedUsers.map((u) => (
@@ -370,7 +370,7 @@ export default function DepartmentsPage() {
             type="button"
             disabled={editSubmitting}
             onClick={() => void submitEdit()}
-            className="mt-2 min-h-[48px] rounded-lg bg-[var(--tg-button)] text-sm font-medium text-[var(--tg-button-text)] disabled:opacity-50"
+            className="tf-btn-primary mt-2 min-h-[48px] rounded-lg text-sm font-medium disabled:opacity-50"
           >
             {editSubmitting ? "Saving…" : "Save"}
           </button>

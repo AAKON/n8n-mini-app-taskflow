@@ -62,8 +62,11 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--tg-bg)] pb-24 pt-3 text-[var(--tg-text)]">
-      <h1 className="px-4 pb-3 text-lg font-bold">Analytics</h1>
+    <div className="tf-page min-h-screen pb-24 pt-3 text-[var(--tg-text)]">
+      <div className="px-4 pb-3">
+        <h1 className="text-lg font-bold">Analytics</h1>
+        <p className="text-xs text-[var(--tg-hint)]">Operational overview for the last 30 days.</p>
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12"><Spinner /></div>
@@ -71,7 +74,7 @@ export default function AnalyticsPage() {
         <p className="px-4 text-center text-sm text-red-500">{error}</p>
       ) : data ? (
         <div className="space-y-4 px-3">
-          <section className="rounded-2xl border border-black/5 bg-[var(--tg-secondary-bg)] p-4 dark:border-white/10">
+          <section className="tf-card p-4">
             <p className="mb-1 text-xs font-semibold text-[var(--tg-hint)]">Last 30 days</p>
             <p className="mb-3 text-sm font-semibold">Created vs. completed</p>
             <TrendChart trend={data.trend} />
@@ -85,7 +88,7 @@ export default function AnalyticsPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-black/5 bg-[var(--tg-secondary-bg)] p-4 dark:border-white/10">
+          <section className="tf-card p-4">
             <p className="text-xs font-semibold text-[var(--tg-hint)]">Avg. completion time</p>
             <p className="mt-1 text-3xl font-bold tabular-nums">
               {data.avgHours}
@@ -93,7 +96,7 @@ export default function AnalyticsPage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-black/5 bg-[var(--tg-secondary-bg)] p-4 dark:border-white/10">
+          <section className="tf-card p-4">
             <p className="mb-3 text-sm font-semibold">Overdue rate per department</p>
             {data.departments.length === 0 ? (
               <p className="text-xs text-[var(--tg-hint)]">No data.</p>
@@ -109,7 +112,7 @@ export default function AnalyticsPage() {
                           {d.overdue}/{d.total} ({pct}%)
                         </span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                      <div className="h-2 overflow-hidden rounded-full bg-[var(--tg-border)]">
                         <div
                           className="h-full rounded-full bg-amber-500 transition-[width]"
                           style={{ width: `${pct}%` }}

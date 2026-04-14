@@ -302,7 +302,7 @@ export function CreateTaskSheet({
     return () => {
       hideMainButton();
     };
-  }, [isOpen, isEdit]);
+  }, [isOpen, isEdit, submitRef]);
 
   return (
     <BottomSheet
@@ -326,7 +326,7 @@ export function CreateTaskSheet({
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 min-h-[44px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm text-[var(--tg-text)] dark:border-white/10"
+            className="tf-input mt-1 min-h-[44px] px-3 text-sm"
           />
         </label>
 
@@ -336,18 +336,18 @@ export function CreateTaskSheet({
           </p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {PRIORITIES.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPriority(p)}
-                className={clsx(
-                  "min-h-[44px] rounded-lg px-2 text-sm font-medium capitalize",
-                  priority === p
-                    ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-                    : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
-                )}
-              >
-                {p}
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPriority(p)}
+                  className={clsx(
+                    "min-h-[44px] rounded-lg border px-2 text-sm font-medium capitalize transition",
+                    priority === p
+                      ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
+                      : "border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+                  )}
+                >
+                  {p}
               </button>
             ))}
           </div>
@@ -365,10 +365,10 @@ export function CreateTaskSheet({
                   type="button"
                   onClick={() => setStatus(s)}
                   className={clsx(
-                    "min-h-[44px] rounded-lg px-1 text-xs font-medium",
+                    "min-h-[44px] rounded-lg border px-1 text-xs font-medium transition",
                     status === s
-                      ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]"
-                      : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+                      ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
+                      : "border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
                   )}
                 >
                   {s.replace("_", " ")}
@@ -388,7 +388,7 @@ export function CreateTaskSheet({
                 setAssigneeId("");
                 setUserQuery("");
               }}
-              className="mt-1 min-h-[44px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-2 text-sm dark:border-white/10"
+              className="tf-select mt-1 min-h-[44px] px-2 text-sm"
             >
               <option value="">Select department</option>
               {departments.map((d) => (
@@ -432,13 +432,13 @@ export function CreateTaskSheet({
                       : `Search in ${departmentPath}…`
                   }
                   disabled={!departmentPath}
-                  className="mb-2 min-h-[44px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 text-sm dark:border-white/10 disabled:opacity-50"
+                  className="tf-input mb-2 min-h-[44px] px-3 text-sm disabled:opacity-50"
                 />
 
                 {/* Dropdown — visible while actively searching */}
                 {isSearching ? (
                   <div
-                    className="max-h-44 touch-pan-y overflow-y-auto overscroll-contain rounded-lg border border-black/10 dark:border-white/10"
+                    className="max-h-44 touch-pan-y overflow-y-auto overscroll-contain rounded-lg border border-[var(--tg-border)] bg-[var(--tg-bg)]"
                   >
                     {filteredUsers.length === 0 ? (
                       <p className="px-3 py-3 text-sm text-[var(--tg-hint)]">
@@ -482,7 +482,7 @@ export function CreateTaskSheet({
             type="date"
             value={dueStr}
             onChange={(e) => setDueStr(e.target.value)}
-            className="mt-1 min-h-[44px] w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-2 text-sm dark:border-white/10"
+            className="tf-input mt-1 min-h-[44px] px-2 text-sm"
           />
         </label>
 
@@ -492,7 +492,7 @@ export function CreateTaskSheet({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            className="mt-1 w-full rounded-lg border border-black/10 bg-[var(--tg-secondary-bg)] px-3 py-2 text-sm dark:border-white/10"
+            className="tf-textarea mt-1 px-3 py-2 text-sm"
           />
         </label>
 

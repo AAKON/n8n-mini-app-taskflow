@@ -73,12 +73,12 @@ export default function CalendarPage() {
   const today = dayjs().format("YYYY-MM-DD");
 
   return (
-    <div className="min-h-screen bg-[var(--tg-bg)] pb-24 pt-3 text-[var(--tg-text)]">
+    <div className="tf-page min-h-screen pb-24 pt-3 text-[var(--tg-text)]">
       <div className="mb-3 flex items-center justify-between px-4">
         <button
           type="button"
           onClick={() => { haptic("light"); setMonth(month.subtract(1, "month")); }}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--tg-secondary-bg)]"
+          className="tf-icon-btn flex h-9 w-9 items-center justify-center rounded-full"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -86,7 +86,7 @@ export default function CalendarPage() {
         <button
           type="button"
           onClick={() => { haptic("light"); setMonth(month.add(1, "month")); }}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--tg-secondary-bg)]"
+          className="tf-icon-btn flex h-9 w-9 items-center justify-center rounded-full"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -114,8 +114,10 @@ export default function CalendarPage() {
                 type="button"
                 onClick={() => { haptic("light"); setSelected(isSelected ? null : key); }}
                 className={clsx(
-                  "aspect-square rounded-xl p-1 text-left transition",
-                  isSelected ? "bg-[var(--tg-button)] text-[var(--tg-button-text)]" : "bg-[var(--tg-secondary-bg)]",
+                  "aspect-square rounded-xl border p-1 text-left transition",
+                  isSelected
+                    ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
+                    : "border-[var(--tg-border)] bg-[var(--tg-card-bg)]",
                   isToday && !isSelected && "ring-1 ring-[var(--tg-button)]",
                 )}
               >
@@ -138,7 +140,7 @@ export default function CalendarPage() {
       )}
 
       {selected ? (
-        <div className="mx-3 mt-4 rounded-2xl bg-[var(--tg-secondary-bg)] p-3">
+        <div className="tf-card mx-3 mt-4 p-3">
           <p className="mb-2 text-xs font-semibold text-[var(--tg-hint)]">
             {dayjs(selected).format("ddd, MMM D")} · {selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}
           </p>
@@ -151,7 +153,7 @@ export default function CalendarPage() {
                   <button
                     type="button"
                     onClick={() => router.push(`/tasks/${t._id}`)}
-                    className="flex w-full items-center gap-2 rounded-xl bg-[var(--tg-bg)] p-2 text-left"
+                    className="tf-card-muted flex w-full items-center gap-2 rounded-xl p-2 text-left"
                   >
                     <span className={clsx("h-2 w-2 shrink-0 rounded-full", PRIORITY_DOT[t.priority] ?? PRIORITY_DOT.medium)} />
                     <span className="truncate text-sm">{t.title}</span>

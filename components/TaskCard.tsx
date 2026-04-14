@@ -55,7 +55,7 @@ function dueMeta(task: ITask) {
   if (!isDone && due.isSame(today)) {
     return { label: "Today", tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400" };
   }
-  return { label: due.format("MMM D"), tone: "bg-black/5 text-[var(--tg-hint)] dark:bg-white/10" };
+  return { label: due.format("MMM D"), tone: "border border-[var(--tg-border)] bg-[var(--tg-bg)] text-[var(--tg-hint)]" };
 }
 
 function stepProgress(task: ITask): { done: number; total: number } {
@@ -137,7 +137,7 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className="relative overflow-hidden rounded-[var(--radius-2xl)]">
       {/* Swipe action background */}
       {canSwipe ? (
         <div
@@ -170,9 +170,9 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
           }
         }}
         className={clsx(
-          "group relative flex w-full gap-3 rounded-2xl border-l-4 bg-[var(--tg-secondary-bg)] p-4 text-left",
-          "shadow-[var(--shadow-sm)] active:scale-[0.985] active:shadow-none",
-          "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)]",
+          "group relative flex w-full gap-3 rounded-[var(--radius-2xl)] border border-[var(--tg-border)] border-l-4 bg-[var(--tg-card-bg)] p-4 text-left",
+          "shadow-[var(--shadow-sm)] hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:scale-[0.985] active:shadow-none",
+          "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)] transition-shadow",
           "touch-pan-y select-none",
           priorityAccent,
           isDone && "opacity-60",
@@ -188,7 +188,7 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
             "relative mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition",
             isDone
               ? "border-emerald-500 bg-emerald-500 text-white"
-              : "border-[var(--tg-hint)]/50 hover:border-emerald-500",
+              : "border-[var(--tg-border-strong)] hover:border-emerald-500",
             popping && "animate-pop",
           )}
         >
@@ -224,7 +224,7 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
                 </span>
                 <span className="text-[11px] text-[var(--tg-hint)]">{pct}%</span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+              <div className="h-1.5 overflow-hidden rounded-full bg-[var(--tg-border)]">
                 <div
                   className={clsx(
                     "h-full rounded-full transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",

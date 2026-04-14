@@ -44,7 +44,7 @@ export function EmptyState({
   return (
     <div
       className={clsx(
-        "flex flex-col items-center justify-center gap-4 px-6 py-16 text-center",
+        "tf-card mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-4 px-6 py-12 text-center",
         className,
       )}
     >
