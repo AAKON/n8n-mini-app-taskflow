@@ -54,7 +54,7 @@ Sends a DM for every task that is **not done**, has a **due date in the next 24 
 { "success": true, "total": 7, "sent": 7, "failed": 0 }
 ```
 
-**Recommended schedule:** every 15 minutes.
+**Recommended schedule:** once per day at 08:00.
 
 ---
 
@@ -92,7 +92,7 @@ curl -fsSL "https://<your-host>/api/cron/daily-digest" \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
 
-Schedule the first one every 15 minutes and the second one at 08:00 daily.
+Schedule both routes at 08:00 daily.
 
 ---
 
