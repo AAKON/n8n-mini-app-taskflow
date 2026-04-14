@@ -4,34 +4,34 @@ import { useEffect } from "react";
 import "@twa-dev/sdk";
 import { useAppStore } from "@/lib/store";
 import { getInitData, getTelegramWebApp } from "@/lib/tma";
+import { applyThemePreference, getStoredThemePreference } from "@/lib/theme";
 import type { IUser } from "@/types";
 import { StoreProvider } from "@/components/store-provider";
 
 function applyThemeFromWebApp() {
   const wa = getTelegramWebApp();
-  if (!wa) return;
+  if (wa) {
+    const root = document.documentElement;
+    const p = wa.themeParams;
 
-  const root = document.documentElement;
-  const p = wa.themeParams;
-
-  if (p.bg_color) root.style.setProperty("--tg-bg", p.bg_color);
-  if (p.text_color) root.style.setProperty("--tg-text", p.text_color);
-  if (p.hint_color) root.style.setProperty("--tg-hint", p.hint_color);
-  if (p.link_color) root.style.setProperty("--tg-link", p.link_color);
-  if (p.button_color) root.style.setProperty("--tg-button", p.button_color);
-  if (p.button_text_color) {
-    root.style.setProperty("--tg-button-text", p.button_text_color);
-  }
-  if (p.secondary_bg_color) {
-    root.style.setProperty("--tg-secondary-bg", p.secondary_bg_color);
-  }
-  if (p.header_bg_color) {
-    root.style.setProperty("--tg-header-bg", p.header_bg_color);
-    wa.setHeaderColor(p.header_bg_color);
+    if (p.bg_color) root.style.setProperty("--tg-bg", p.bg_color);
+    if (p.text_color) root.style.setProperty("--tg-text", p.text_color);
+    if (p.hint_color) root.style.setProperty("--tg-hint", p.hint_color);
+    if (p.link_color) root.style.setProperty("--tg-link", p.link_color);
+    if (p.button_color) root.style.setProperty("--tg-button", p.button_color);
+    if (p.button_text_color) {
+      root.style.setProperty("--tg-button-text", p.button_text_color);
+    }
+    if (p.secondary_bg_color) {
+      root.style.setProperty("--tg-secondary-bg", p.secondary_bg_color);
+    }
+    if (p.header_bg_color) {
+      root.style.setProperty("--tg-header-bg", p.header_bg_color);
+      wa.setHeaderColor(p.header_bg_color);
+    }
   }
 
-  root.classList.toggle("dark", wa.colorScheme === "dark");
-  root.style.colorScheme = wa.colorScheme === "dark" ? "dark" : "light";
+  applyThemePreference();
 }
 
 async function bootstrapAuth(
@@ -102,8 +102,17 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     const onTheme = () => applyThemeFromWebApp();
     wa?.onEvent("themeChanged", onTheme);
 
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystemTheme = () => {
+      if (getStoredThemePreference() === "auto") {
+        applyThemeFromWebApp();
+      }
+    };
+    media.addEventListener("change", onSystemTheme);
+
     return () => {
       wa?.offEvent("themeChanged", onTheme);
+      media.removeEventListener("change", onSystemTheme);
     };
   }, [setAuth, clearAuth, setLoading]);
 
