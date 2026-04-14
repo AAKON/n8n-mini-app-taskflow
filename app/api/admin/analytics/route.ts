@@ -31,67 +31,57 @@ export const GET = withAuth(async (_req, user) => {
           },
           {
             $project: {
-              createdKey: {
-                $cond: [
-                  { $gte: ["$createdAt", start30] },
-                  { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                  null,
-                ],
-              },
-              doneKey: {
-                $cond: [
-                  {
-                    $and: [
-                      { $eq: ["$status", "done"] },
-                      { $gte: ["$updatedAt", start30] },
+              points: [
+                {
+                  _id: {
+                    $cond: [
+                      { $gte: ["$createdAt", start30] },
+                      { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                      null,
                     ],
                   },
-                  { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
-                  null,
-                ],
-              },
-            },
-          },
-          {
-            $facet: {
-              c: [
-                { $match: { createdKey: { $ne: null } } },
-                { $group: { _id: "$createdKey", n: { $sum: 1 } } },
-              ],
-              d: [
-                { $match: { doneKey: { $ne: null } } },
-                { $group: { _id: "$doneKey", n: { $sum: 1 } } },
-              ],
-            },
-          },
-          {
-            $project: {
-              all: {
-                $concatArrays: [
-                  {
-                    $map: {
-                      input: "$c",
-                      as: "x",
-                      in: { _id: "$$x._id", created: "$$x.n", done: 0 },
-                    },
+                  created: {
+                    $cond: [{ $gte: ["$createdAt", start30] }, 1, 0],
                   },
-                  {
-                    $map: {
-                      input: "$d",
-                      as: "x",
-                      in: { _id: "$$x._id", created: 0, done: "$$x.n" },
-                    },
+                  done: 0,
+                },
+                {
+                  _id: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $eq: ["$status", "done"] },
+                          { $gte: ["$updatedAt", start30] },
+                        ],
+                      },
+                      { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
+                      null,
+                    ],
                   },
-                ],
-              },
+                  created: 0,
+                  done: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $eq: ["$status", "done"] },
+                          { $gte: ["$updatedAt", start30] },
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+              ],
             },
           },
-          { $unwind: "$all" },
+          { $unwind: "$points" },
+          { $match: { "points._id": { $ne: null } } },
           {
             $group: {
-              _id: "$all._id",
-              created: { $sum: "$all.created" },
-              done: { $sum: "$all.done" },
+              _id: "$points._id",
+              created: { $sum: "$points.created" },
+              done: { $sum: "$points.done" },
             },
           },
           { $sort: { _id: 1 } },
