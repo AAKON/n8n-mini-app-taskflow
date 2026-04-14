@@ -49,6 +49,14 @@ export function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
   const items = itemsForRole(user?.role);
+  const activeHref =
+    items
+      .filter(({ href }) =>
+        href === "/"
+          ? pathname === "/" || pathname === ""
+          : pathname === href || pathname.startsWith(`${href}/`),
+      )
+      .sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null;
 
   if (items.length <= 1) {
     return null;
@@ -65,10 +73,7 @@ export function BottomNav() {
       <div className="tf-nav-shell mx-auto max-w-[38rem] p-1.5">
         <div className="flex items-stretch justify-around gap-1">
           {items.map(({ href, label, icon: Icon }) => {
-            const active =
-              href === "/"
-                ? pathname === "/" || pathname === ""
-                : pathname === href || pathname.startsWith(`${href}/`);
+            const active = href === activeHref;
             return (
               <Link
                 key={href}

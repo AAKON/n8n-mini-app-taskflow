@@ -54,7 +54,7 @@ export function ThemeToggle() {
         setScheme(applied.scheme);
       }}
       className={clsx(
-        "tf-icon-btn fixed right-4 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[55] h-10 w-10 rounded-full bg-[var(--tg-card-bg)]/90 shadow-[var(--shadow-md)] backdrop-blur-md",
+        "tf-icon-btn fixed bottom-[calc(4.9rem+env(safe-area-inset-bottom))] left-4 z-[55] h-10 w-10 rounded-full bg-[var(--tg-card-bg)]/90 shadow-[var(--shadow-md)] backdrop-blur-md",
         ready ? "opacity-100" : "pointer-events-none opacity-0",
         scheme === "dark" ? "text-[var(--brand-1)]" : "text-[var(--brand-2)]",
       )}

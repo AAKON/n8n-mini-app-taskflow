@@ -151,6 +151,7 @@ export const GET = withAuth(async (req, user) => {
   const status = url.searchParams.get("status");
   const priority = url.searchParams.get("priority");
   const assigneeId = url.searchParams.get("assigneeId");
+  const excludeAssigneeId = url.searchParams.get("excludeAssigneeId");
   const departmentPath = url.searchParams.get("departmentPath");
   const dueFilterRaw = url.searchParams.get("dueFilter");
   const q = url.searchParams.get("q");
@@ -170,6 +171,13 @@ export const GET = withAuth(async (req, user) => {
   if (assigneeId !== null && assigneeId !== "" && !Types.ObjectId.isValid(assigneeId)) {
     return apiError("Invalid assigneeId", 400);
   }
+  if (
+    excludeAssigneeId !== null &&
+    excludeAssigneeId !== "" &&
+    !Types.ObjectId.isValid(excludeAssigneeId)
+  ) {
+    return apiError("Invalid excludeAssigneeId", 400);
+  }
 
   const page = parsePositiveInt(url.searchParams.get("page"), 1);
   const limit = Math.min(
@@ -182,6 +190,7 @@ export const GET = withAuth(async (req, user) => {
     status: status || null,
     priority: priority || null,
     assigneeId: assigneeId || null,
+    excludeAssigneeId: excludeAssigneeId || null,
     departmentPath,
     dueFilter,
     q,

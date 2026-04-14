@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["bagged-tux-onyx.ngrok-free.dev"],
+  allowedDevOrigins: ["n8n-mini-app-taskflow.vercel.app"],
 };
 
 export default nextConfig;

@@ -8,6 +8,7 @@ export type TaskListQuery = {
   status?: string | null;
   priority?: string | null;
   assigneeId?: string | null;
+  excludeAssigneeId?: string | null;
   departmentPath?: string | null;
   dueFilter?: DueFilter;
   q?: string | null;
@@ -46,6 +47,9 @@ export function buildTaskListFilter(
   }
   if (query.assigneeId && Types.ObjectId.isValid(query.assigneeId)) {
     clauses.push({ assigneeId: new Types.ObjectId(query.assigneeId) });
+  }
+  if (query.excludeAssigneeId && Types.ObjectId.isValid(query.excludeAssigneeId)) {
+    clauses.push({ assigneeId: { $ne: new Types.ObjectId(query.excludeAssigneeId) } });
   }
   if (query.departmentPath) {
     clauses.push({

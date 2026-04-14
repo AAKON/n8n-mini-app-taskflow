@@ -48,6 +48,8 @@ export function useTasks(filters: UseTasksFilters) {
       }
       if (filters.tab === "my") {
         params.set("assigneeId", filters.userId);
+      } else if (filters.tab === "team") {
+        params.set("excludeAssigneeId", filters.userId);
       }
       if (filters.dueFilter) {
         params.set("dueFilter", filters.dueFilter);
