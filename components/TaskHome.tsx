@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
-import { ListTodo, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  ListTodo,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import type { TaskListTask } from "@/components/TaskCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useTasks, type TaskTab } from "@/hooks/useTasks";
@@ -196,174 +205,252 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   }
 
   const canCreate = hasRole(user.role, "manager");
+  const firstName =
+    user.name.trim().split(/\s+/).filter(Boolean)[0] ?? "there";
+  const workspaceLabel =
+    tab === "my" ? "My workspace" : tab === "team" ? "Team workspace" : "All tasks";
+  const today = dayjs().startOf("day");
+  const doneCount = tasks.filter((t) => t.status === "done").length;
+  const openCount = Math.max(tasks.length - doneCount, 0);
+  const overdueCount = tasks.filter((t) => {
+    if (t.status === "done" || !t.dueDate) return false;
+    return dayjs(t.dueDate).startOf("day").isBefore(today);
+  }).length;
 
   return (
     <div className="tf-page flex min-h-screen flex-col pt-2">
-      {/* Tab bar */}
-      {showTeamTab ? (
-        <div className="tf-topbar flex gap-1 px-3 pb-2">
-          <TabButton active={tab === "my"} disabled={isLoading && tasks.length === 0} onClick={() => setTab("my")} label="My Tasks" />
-          <TabButton active={tab === "team"} disabled={isLoading && tasks.length === 0} onClick={() => setTab("team")} label="Team" />
-          {showAllTab ? (
-            <TabButton active={tab === "all"} disabled={isLoading && tasks.length === 0} onClick={() => setTab("all")} label="All" />
-          ) : null}
-        </div>
-      ) : null}
-
-      {/* Search bar */}
-      <div className="px-3 pt-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--tg-hint)]" />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search tasks…"
-            className="tf-input min-h-[42px] rounded-xl py-2 pl-9 pr-9 text-sm"
-          />
-          {searchInput ? (
-            <button
-              type="button"
-              onClick={() => { setSearchInput(""); setSearch(""); }}
-              aria-label="Clear search"
-              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--tg-hint)] transition-colors hover:bg-[var(--tg-surface-hover)]"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      {/* Filter header */}
-      <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-        <div className="no-scrollbar flex flex-1 gap-2 overflow-x-auto">
-          {STATUS_OPTIONS.map((o) => (
-            <button
-              key={o.value || "all-status"}
-              type="button"
-              disabled={isLoading && tasks.length === 0}
-              onClick={() => { haptic("light"); setStatus(o.value); }}
-              className={clsx(
-                "shrink-0 rounded-full px-3 py-2 text-sm font-medium transition",
-                "min-h-[40px]",
-                status === o.value
-                  ? "tf-chip tf-chip-active"
-                  : "tf-chip",
-                isLoading && tasks.length === 0 && "opacity-50",
-              )}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Filter toggle button */}
-        <button
-          type="button"
-          onClick={() => { haptic("light"); setShowFilters((v) => !v); }}
-          className={clsx(
-            "relative shrink-0 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--tg-border)] transition",
-            showFilters || activeFilterCount > 0
-              ? "bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
-              : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
-          )}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          {activeFilterCount > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-              {activeFilterCount}
-            </span>
-          ) : null}
-        </button>
-      </div>
-
-      {/* Expanded filters panel */}
-      {showFilters ? (
-        <div className="tf-card mx-3 mb-2 space-y-3 p-3">
-          {/* Due date */}
-          <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">Due date</p>
-            <div className="no-scrollbar flex gap-2 overflow-x-auto">
-              {DUE_OPTIONS.map((o) => (
-                <button
-                  key={o.value ?? "any-due"}
-                  type="button"
-                  onClick={() => { haptic("light"); setDueFilter(o.value); }}
-                  className={clsx(
-                    "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
-                    dueFilter === o.value
-                      ? "tf-chip tf-chip-active"
-                      : "tf-chip",
-                  )}
-                >
-                  {o.label}
-                </button>
-              ))}
+      <div className="space-y-3 px-3">
+        <section className="tf-card overflow-hidden p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--tg-hint)]">
+                {workspaceLabel}
+              </p>
+              <h1 className="mt-1 truncate text-xl font-semibold leading-tight">
+                Hi, {firstName}
+              </h1>
+              <p className="mt-1 text-xs text-[var(--tg-hint)]">
+                {total} task{total !== 1 ? "s" : ""} in this view
+              </p>
+            </div>
+            <div className="tf-card-muted flex h-10 w-10 items-center justify-center rounded-xl text-[var(--tg-button)]">
+              <ListTodo className="h-5 w-5" />
             </div>
           </div>
 
-          {/* Department */}
-          {showDeptFilter && departments.length > 0 ? (
-            <div>
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">Department</p>
-              <div className="no-scrollbar flex gap-2 overflow-x-auto">
-                <button
-                  type="button"
-                  onClick={() => { haptic("light"); setDeptFilter(""); }}
-                   className={clsx(
-                     "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
-                     !deptFilter
-                       ? "tf-chip tf-chip-active"
-                       : "tf-chip",
-                   )}
-                 >
-                   All
-                 </button>
-                {[...departments].sort((a, b) => a.path.localeCompare(b.path)).map((d) => (
-                  <button
-                    key={d._id}
-                    type="button"
-                    onClick={() => { haptic("light"); setDeptFilter(deptFilter === d.path ? "" : d.path); }}
-                     className={clsx(
-                       "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
-                       deptFilter === d.path
-                         ? "tf-chip tf-chip-active"
-                         : "tf-chip",
-                     )}
-                   >
-                     {d.name}
-                   </button>
-                ))}
-              </div>
+          {showTeamTab ? (
+            <div
+              className={clsx(
+                "mt-4 grid gap-2",
+                showAllTab ? "grid-cols-3" : "grid-cols-2",
+              )}
+            >
+              <TabButton
+                active={tab === "my"}
+                disabled={isLoading && tasks.length === 0}
+                onClick={() => setTab("my")}
+                label="My Tasks"
+              />
+              <TabButton
+                active={tab === "team"}
+                disabled={isLoading && tasks.length === 0}
+                onClick={() => setTab("team")}
+                label="Team"
+              />
+              {showAllTab ? (
+                <TabButton
+                  active={tab === "all"}
+                  disabled={isLoading && tasks.length === 0}
+                  onClick={() => setTab("all")}
+                  label="All"
+                />
+              ) : null}
             </div>
           ) : null}
 
-          {/* Clear all */}
-          {activeFilterCount > 0 ? (
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <MetricTile
+              icon={<Clock3 className="h-3.5 w-3.5" />}
+              label="Open"
+              value={openCount}
+            />
+            <MetricTile
+              icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+              label="Done"
+              value={doneCount}
+              tone="success"
+            />
+            <MetricTile
+              icon={<AlertTriangle className="h-3.5 w-3.5" />}
+              label="Overdue"
+              value={overdueCount}
+              tone="danger"
+            />
+          </div>
+        </section>
+
+        <section className="tf-card p-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--tg-hint)]" />
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search tasks…"
+                className="tf-input min-h-[42px] rounded-xl py-2 pl-9 pr-9 text-sm"
+              />
+              {searchInput ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearch("");
+                  }}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--tg-hint)] transition-colors hover:bg-[var(--tg-surface-hover)]"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
             <button
               type="button"
-              onClick={() => { haptic("light"); clearFilters(); }}
-              className="flex items-center gap-1.5 text-xs text-red-500 font-medium"
+              onClick={() => {
+                haptic("light");
+                setShowFilters((v) => !v);
+              }}
+              className={clsx(
+                "relative shrink-0 flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--tg-border)] transition",
+                showFilters || activeFilterCount > 0
+                  ? "bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
+                  : "bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
+              )}
             >
-              <X className="h-3.5 w-3.5" />
-              Clear all filters
+              <SlidersHorizontal className="h-4 w-4" />
+              {activeFilterCount > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              ) : null}
             </button>
-          ) : null}
-        </div>
-      ) : null}
+          </div>
 
-      {/* Task count */}
-      {!isLoading && tasks.length > 0 ? (
-        <p className="px-4 pb-1 text-xs text-[var(--tg-hint)]">
+          <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-0.5">
+            {STATUS_OPTIONS.map((o) => (
+              <button
+                key={o.value || "all-status"}
+                type="button"
+                disabled={isLoading && tasks.length === 0}
+                onClick={() => {
+                  haptic("light");
+                  setStatus(o.value);
+                }}
+                className={clsx(
+                  "tf-chip shrink-0 rounded-full px-3 py-2 text-sm font-medium",
+                  status === o.value && "tf-chip-active",
+                  isLoading && tasks.length === 0 && "opacity-50",
+                )}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+
+          {showFilters ? (
+            <div className="mt-3 space-y-3 rounded-xl border border-[var(--tg-border)] bg-[var(--tg-card-muted)] p-3">
+              <div>
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">
+                  Due date
+                </p>
+                <div className="no-scrollbar flex gap-2 overflow-x-auto">
+                  {DUE_OPTIONS.map((o) => (
+                    <button
+                      key={o.value ?? "any-due"}
+                      type="button"
+                      onClick={() => {
+                        haptic("light");
+                        setDueFilter(o.value);
+                      }}
+                      className={clsx(
+                        "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+                        dueFilter === o.value && "tf-chip-active",
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {showDeptFilter && departments.length > 0 ? (
+                <div>
+                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">
+                    Department
+                  </p>
+                  <div className="no-scrollbar flex gap-2 overflow-x-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic("light");
+                        setDeptFilter("");
+                      }}
+                      className={clsx(
+                        "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+                        !deptFilter && "tf-chip-active",
+                      )}
+                    >
+                      All
+                    </button>
+                    {[...departments]
+                      .sort((a, b) => a.path.localeCompare(b.path))
+                      .map((d) => (
+                        <button
+                          key={d._id}
+                          type="button"
+                          onClick={() => {
+                            haptic("light");
+                            setDeptFilter(deptFilter === d.path ? "" : d.path);
+                          }}
+                          className={clsx(
+                            "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+                            deptFilter === d.path && "tf-chip-active",
+                          )}
+                        >
+                          {d.name}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      </div>
+
+      <div className="mt-1 flex items-center justify-between px-4 pb-1 text-xs text-[var(--tg-hint)]">
+        <span>
           {total} task{total !== 1 ? "s" : ""}
-        </p>
-      ) : null}
+        </span>
+        {activeFilterCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => {
+              haptic("light");
+              clearFilters();
+            }}
+            className="inline-flex items-center gap-1 text-red-500"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear filters
+          </button>
+        ) : null}
+      </div>
 
       {error ? (
         <p className="px-4 py-2 text-center text-sm text-red-500">{error}</p>
       ) : null}
 
-      {/* Task list */}
       <div
         ref={scrollRef}
         className="flex flex-1 flex-col gap-3 overflow-y-auto px-3 pb-36"
@@ -403,12 +490,21 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
                 ).map(([key, label]) =>
                   grouped[key].length > 0 ? (
                     <div key={key} className="flex flex-col gap-3">
-                      <h2 className={clsx(
-                        "px-1 pt-2 text-[11px] font-semibold uppercase tracking-wider",
-                        key === "overdue" ? "text-red-500" : "text-[var(--tg-hint)]",
-                      )}>
-                        {label} · {grouped[key].length}
-                      </h2>
+                      <div className="flex items-center gap-2 px-1 pt-2">
+                        <h2
+                          className={clsx(
+                            "text-[11px] font-semibold uppercase tracking-wider",
+                            key === "overdue"
+                              ? "text-red-500"
+                              : "text-[var(--tg-hint)]",
+                          )}
+                        >
+                          {label}
+                        </h2>
+                        <span className="rounded-full border border-[var(--tg-border)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--tg-hint)]">
+                          {grouped[key].length}
+                        </span>
+                      </div>
                       {grouped[key].map((t) => (
                         <TaskCard
                           key={t._id}
@@ -449,7 +545,6 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
         )}
       </div>
 
-      {/* FAB */}
       {canCreate ? (
         <button
           type="button"
@@ -486,7 +581,7 @@ function TabButton(props: {
       disabled={props.disabled}
       onClick={() => { haptic("light"); props.onClick(); }}
       className={clsx(
-        "min-h-[44px] flex-1 rounded-xl border px-2 py-2 text-sm font-medium transition",
+        "min-h-[42px] flex-1 rounded-xl border px-2 py-2 text-xs font-semibold uppercase tracking-wide transition",
         props.active
           ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
           : "border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] text-[var(--tg-text)]",
@@ -495,5 +590,33 @@ function TabButton(props: {
     >
       {props.label}
     </button>
+  );
+}
+
+function MetricTile(props: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  tone?: "default" | "success" | "danger";
+}) {
+  return (
+    <div
+      className={clsx(
+        "rounded-xl border p-2.5",
+        props.tone === "success"
+          ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          : props.tone === "danger"
+            ? "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-300"
+            : "border-[var(--tg-border)] bg-[var(--tg-card-muted)] text-[var(--tg-text)]",
+      )}
+    >
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wide">
+          {props.label}
+        </span>
+        <span className="opacity-80">{props.icon}</span>
+      </div>
+      <p className="mt-1 text-lg font-bold tabular-nums">{props.value}</p>
+    </div>
   );
 }
