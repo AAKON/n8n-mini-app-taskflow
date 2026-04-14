@@ -6,14 +6,14 @@
   --background: #f3f6fb;
   --foreground: #0f172a;
 
-  --tg-bg: var(--tg-theme-bg-color, #f3f6fb);
-  --tg-text: var(--tg-theme-text-color, #0f172a);
-  --tg-hint: var(--tg-theme-hint-color, #64748b);
-  --tg-link: var(--tg-theme-link-color, #0f766e);
-  --tg-button: var(--tg-theme-button-color, #0f766e);
-  --tg-button-text: var(--tg-theme-button-text-color, #f8fafc);
-  --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #eaf0f8);
-  --tg-header-bg: var(--tg-theme-header-bg-color, var(--tg-bg));
+  --tg-bg: #f3f6fb;
+  --tg-text: #0f172a;
+  --tg-hint: #64748b;
+  --tg-link: #0f766e;
+  --tg-button: #0f766e;
+  --tg-button-text: #f8fafc;
+  --tg-secondary-bg: #eaf0f8;
+  --tg-header-bg: #f3f6fb;
 
   --tg-card-bg: #ffffff;
   --tg-card-muted: #eef3fa;
@@ -91,14 +91,14 @@
     --background: #050b14;
     --foreground: #e6edf6;
 
-    --tg-bg: var(--tg-theme-bg-color, #050b14);
-    --tg-text: var(--tg-theme-text-color, #e6edf6);
-    --tg-hint: var(--tg-theme-hint-color, #90a1b8);
-    --tg-link: var(--tg-theme-link-color, #5eead4);
-    --tg-button: var(--tg-theme-button-color, #14b8a6);
-    --tg-button-text: var(--tg-theme-button-text-color, #032825);
-    --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #0b1628);
-    --tg-header-bg: var(--tg-theme-header-bg-color, #050b14);
+    --tg-bg: #050b14;
+    --tg-text: #e6edf6;
+    --tg-hint: #90a1b8;
+    --tg-link: #5eead4;
+    --tg-button: #14b8a6;
+    --tg-button-text: #032825;
+    --tg-secondary-bg: #0b1628;
+    --tg-header-bg: #050b14;
 
     --tg-card-bg: #0e1b2f;
     --tg-card-muted: #0b1628;
