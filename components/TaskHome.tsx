@@ -352,74 +352,85 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
             ))}
           </div>
 
-          {showFilters ? (
-            <div className="mt-3 space-y-3 rounded-xl border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)]/60 p-3">
-              <div>
-                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">
-                  Due date
-                </p>
-                <div className="no-scrollbar flex gap-2 overflow-x-auto">
-                  {DUE_OPTIONS.map((o) => (
-                    <button
-                      key={o.value ?? "any-due"}
-                      type="button"
-                      onClick={() => {
-                        haptic("light");
-                        setDueFilter(o.value);
-                      }}
-                      className={clsx(
-                        "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
-                        dueFilter === o.value && "tf-chip-active",
-                      )}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {showDeptFilter && departments.length > 0 ? (
+          <div
+            className={clsx(
+              "tf-collapse",
+              showFilters && "tf-collapse-open",
+            )}
+            aria-hidden={!showFilters}
+          >
+            <div className="tf-collapse-inner">
+              <div className="mt-3 space-y-3 rounded-xl border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)]/60 p-3">
                 <div>
                   <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">
-                    Department
+                    Due date
                   </p>
                   <div className="no-scrollbar flex gap-2 overflow-x-auto">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        haptic("light");
-                        setDeptFilter("");
-                      }}
-                      className={clsx(
-                        "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
-                        !deptFilter && "tf-chip-active",
-                      )}
-                    >
-                      All
-                    </button>
-                    {[...departments]
-                      .sort((a, b) => a.path.localeCompare(b.path))
-                      .map((d) => (
-                        <button
-                          key={d._id}
-                          type="button"
-                          onClick={() => {
-                            haptic("light");
-                            setDeptFilter(deptFilter === d.path ? "" : d.path);
-                          }}
-                          className={clsx(
-                            "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
-                            deptFilter === d.path && "tf-chip-active",
-                          )}
-                        >
-                          {d.name}
-                        </button>
-                      ))}
+                    {DUE_OPTIONS.map((o) => (
+                      <button
+                        key={o.value ?? "any-due"}
+                        type="button"
+                        tabIndex={showFilters ? 0 : -1}
+                        onClick={() => {
+                          haptic("light");
+                          setDueFilter(o.value);
+                        }}
+                        className={clsx(
+                          "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+                          dueFilter === o.value && "tf-chip-active",
+                        )}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              ) : null}
+
+                {showDeptFilter && departments.length > 0 ? (
+                  <div>
+                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">
+                      Department
+                    </p>
+                    <div className="no-scrollbar flex gap-2 overflow-x-auto">
+                      <button
+                        type="button"
+                        tabIndex={showFilters ? 0 : -1}
+                        onClick={() => {
+                          haptic("light");
+                          setDeptFilter("");
+                        }}
+                        className={clsx(
+                          "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+                          !deptFilter && "tf-chip-active",
+                        )}
+                      >
+                        All
+                      </button>
+                      {[...departments]
+                        .sort((a, b) => a.path.localeCompare(b.path))
+                        .map((d) => (
+                          <button
+                            key={d._id}
+                            type="button"
+                            tabIndex={showFilters ? 0 : -1}
+                            onClick={() => {
+                              haptic("light");
+                              setDeptFilter(deptFilter === d.path ? "" : d.path);
+                            }}
+                            className={clsx(
+                              "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+                              deptFilter === d.path && "tf-chip-active",
+                            )}
+                          >
+                            {d.name}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
-          ) : null}
+          </div>
         </section>
       </div>
 

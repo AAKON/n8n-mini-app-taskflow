@@ -119,7 +119,11 @@ export default function AnalyticsPage() {
                 {data.employees.map((e) => {
                   const donePct = Math.round(e.completionRate * 100);
                   return (
-                    <li key={e.userId} className="flex items-center gap-3">
+                    <li
+                      key={e.userId}
+                      onClick={() => router.push(`/admin/analytics/employees/${e.userId}`)}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl p-1.5 -m-1.5 transition hover:bg-[var(--tg-surface-hover)]"
+                    >
                       <Avatar
                         user={{
                           _id: e.userId,

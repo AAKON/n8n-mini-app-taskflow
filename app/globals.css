@@ -229,6 +229,25 @@ body {
     transform: scale(0.99);
   }
 
+  .tf-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+      grid-template-rows var(--duration-slow) var(--ease-out),
+      opacity var(--duration-base) var(--ease-out);
+  }
+
+  .tf-collapse-open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .tf-collapse-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+
   .tf-priority-pill {
     display: inline-flex;
     align-items: center;

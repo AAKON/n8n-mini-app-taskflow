@@ -9,6 +9,30 @@ function isRole(v: unknown): v is Role {
   return typeof v === "string" && ROLES.includes(v as Role);
 }
 
+export const GET = withAuth(async (_req, _user, ctx) => {
+  const raw = ctx.params?.id;
+  const id = Array.isArray(raw) ? raw[0] : raw;
+  if (!id || !Types.ObjectId.isValid(id)) {
+    return apiError("Invalid user id", 400);
+  }
+  const found = await User.findById(id)
+    .select("_id name username avatarUrl role departmentPath createdAt updatedAt")
+    .lean<{
+      _id: unknown;
+      name: string;
+      username?: string;
+      avatarUrl?: string;
+      role: Role;
+      departmentPath?: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>();
+  if (!found) {
+    return apiError("User not found", 404);
+  }
+  return apiResponse({ ...found, _id: String(found._id) });
+});
+
 export const PATCH = withAuth(async (req, user, ctx) => {
   if (user.role !== "admin") {
     return apiError("Forbidden", 403);
