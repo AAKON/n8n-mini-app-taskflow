@@ -44,9 +44,11 @@ export async function POST(request: Request) {
       {
         $set: {
           telegramId: tgUser.id,
-          name,
           username: tgUser.username,
           avatarUrl: tgUser.photo_url,
+        },
+        $setOnInsert: {
+          name,
         },
       },
       { upsert: true, new: true, runValidators: true },
@@ -56,6 +58,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, error: "Failed to create or load user" },
         { status: 500 },
+      );
+    }
+
+    if (user.isBlocked) {
+      return NextResponse.json(
+        { success: false, error: "Your account has been blocked. Contact an admin." },
+        { status: 403 },
       );
     }
 

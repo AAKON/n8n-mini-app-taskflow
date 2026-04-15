@@ -10,6 +10,7 @@ const UserSchema = new Schema(
     avatarUrl: String,
     role: { type: String, enum: ROLES, default: "member" },
     departmentPath: { type: String, default: "" },
+    isBlocked: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

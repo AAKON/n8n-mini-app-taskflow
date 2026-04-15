@@ -16,7 +16,7 @@ export const GET = withAuth(async (_req, _user, ctx) => {
     return apiError("Invalid user id", 400);
   }
   const found = await User.findById(id)
-    .select("_id name username avatarUrl role departmentPath createdAt updatedAt")
+    .select("_id name username avatarUrl role departmentPath isBlocked createdAt updatedAt")
     .lean<{
       _id: unknown;
       name: string;
@@ -48,9 +48,10 @@ export const PATCH = withAuth(async (req, user, ctx) => {
     role?: unknown;
     departmentPath?: unknown;
     name?: unknown;
+    isBlocked?: unknown;
   };
 
-  const update: { role?: Role; departmentPath?: string; name?: string } = {};
+  const update: { role?: Role; departmentPath?: string; name?: string; isBlocked?: boolean } = {};
 
   if (body.name !== undefined) {
     if (typeof body.name !== "string" || !body.name.trim()) {
@@ -73,6 +74,16 @@ export const PATCH = withAuth(async (req, user, ctx) => {
     update.departmentPath = body.departmentPath;
   }
 
+  if (body.isBlocked !== undefined) {
+    if (typeof body.isBlocked !== "boolean") {
+      return apiError("isBlocked must be a boolean", 400);
+    }
+    if (id === user._id) {
+      return apiError("Cannot block yourself", 400);
+    }
+    update.isBlocked = body.isBlocked;
+  }
+
   if (Object.keys(update).length === 0) {
     return apiError("No fields to update", 400);
   }
@@ -82,7 +93,7 @@ export const PATCH = withAuth(async (req, user, ctx) => {
     { $set: update },
     { new: true, runValidators: true },
   )
-    .select("_id name username avatarUrl role departmentPath createdAt updatedAt")
+    .select("_id name username avatarUrl role departmentPath isBlocked createdAt updatedAt")
     .lean();
 
   if (!updated) {

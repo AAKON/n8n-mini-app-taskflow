@@ -132,6 +132,39 @@ export function UserEditSheet({
     onClose,
   ]);
 
+  const toggleBlock = useCallback(async () => {
+    if (!token || !user) return;
+    setErr(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/users/${user._id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isBlocked: !user.isBlocked }),
+      });
+      const json = (await res.json()) as {
+        success?: boolean;
+        data?: IUser;
+        error?: string;
+      };
+      if (!res.ok || json.success === false || !json.data) {
+        throw new Error(json.error || "Failed");
+      }
+      onSaved?.(json.data);
+      haptic("success");
+      onClose();
+      hideMainButton();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Request failed");
+      haptic("error");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [token, user, onSaved, onClose]);
+
   useEffect(() => {
     if (!isOpen) {
       hideMainButton();
@@ -212,6 +245,17 @@ export function UserEditSheet({
         >
           {submitting ? "Saving…" : "Save"}
         </button>
+
+        {!isSelf ? (
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => void toggleBlock()}
+            className="min-h-[44px] rounded-lg border border-[var(--tone-danger)] text-sm font-medium text-[var(--tone-danger)] disabled:opacity-50"
+          >
+            {submitting ? "…" : user?.isBlocked ? "Unblock user" : "Block user"}
+          </button>
+        ) : null}
       </div>
     </BottomSheet>
   );

@@ -214,7 +214,14 @@ export default function AdminPage() {
                         {u.departmentPath || "—"}
                       </p>
                     </div>
-                    <Badge label={roleLabel(u.role)} />
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge label={roleLabel(u.role)} />
+                      {u.isBlocked ? (
+                        <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+                          Blocked
+                        </span>
+                      ) : null}
+                    </div>
                   </button>
                 </li>
               ))}

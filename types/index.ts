@@ -12,6 +12,7 @@ export interface IUser {
   avatarUrl?: string;
   role: Role;
   departmentPath: string;
+  isBlocked?: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
