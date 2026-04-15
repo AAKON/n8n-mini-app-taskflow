@@ -180,6 +180,67 @@ body {
       box-shadow var(--duration-base) var(--ease-out);
   }
 
+  .tf-task-card {
+    position: relative;
+    border: 1px solid var(--tg-border);
+    border-radius: var(--radius-2xl);
+    background:
+      linear-gradient(
+        140deg,
+        color-mix(in srgb, var(--tg-card-bg) 94%, transparent),
+        var(--tg-card-bg) 60%
+      );
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition:
+      transform var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out),
+      border-color var(--duration-base) var(--ease-out);
+  }
+
+  .tf-task-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tg-card-bg) 60%, transparent),
+      transparent 40%,
+      color-mix(in srgb, var(--brand-2) 14%, transparent)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  .tf-task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: color-mix(in srgb, var(--brand-1) 30%, var(--tg-border));
+  }
+
+  .tf-task-card:active {
+    transform: scale(0.99);
+  }
+
+  .tf-priority-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
   .tf-card-muted {
     border: 1px solid var(--tg-border);
     border-radius: var(--radius-xl);
@@ -378,6 +439,80 @@ body {
 
 .animate-pop {
   animation: confetti-pop 0.6s var(--ease-spring);
+}
+
+@keyframes tf-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tf-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tf-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tf-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.tf-animate-fade-up {
+  animation: tf-fade-up 0.5s var(--ease-out) both;
+}
+
+.tf-animate-fade-in {
+  animation: tf-fade-in 0.4s var(--ease-out) both;
+}
+
+.tf-animate-scale-in {
+  animation: tf-scale-in 0.45s var(--ease-spring) both;
+}
+
+.tf-stagger > * {
+  animation: tf-fade-up 0.45s var(--ease-out) both;
+}
+.tf-stagger > *:nth-child(1) { animation-delay: 20ms; }
+.tf-stagger > *:nth-child(2) { animation-delay: 70ms; }
+.tf-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.tf-stagger > *:nth-child(4) { animation-delay: 170ms; }
+.tf-stagger > *:nth-child(5) { animation-delay: 220ms; }
+.tf-stagger > *:nth-child(6) { animation-delay: 270ms; }
+.tf-stagger > *:nth-child(7) { animation-delay: 320ms; }
+.tf-stagger > *:nth-child(8) { animation-delay: 360ms; }
+.tf-stagger > *:nth-child(n+9) { animation-delay: 400ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-animate-fade-up,
+  .tf-animate-fade-in,
+  .tf-animate-scale-in,
+  .tf-stagger > * {
+    animation: none !important;
+  }
 }
 
 @layer utilities {

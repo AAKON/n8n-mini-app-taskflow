@@ -16,13 +16,6 @@ export type TaskCardProps = {
   onComplete?: (taskId: string) => void;
 };
 
-const PRIORITY_ACCENT: Record<string, string> = {
-  urgent: "border-l-[var(--tone-danger)]",
-  high: "border-l-[var(--tone-warning)]",
-  medium: "border-l-[var(--tone-info)]",
-  low: "border-l-[var(--tg-border-strong)]",
-};
-
 const PRIORITY_LABEL: Record<string, string> = {
   urgent: "Urgent",
   high: "High",
@@ -30,11 +23,18 @@ const PRIORITY_LABEL: Record<string, string> = {
   low: "Low",
 };
 
-const PRIORITY_TEXT: Record<string, string> = {
-  urgent: "text-[var(--tone-danger)]",
-  high: "text-[var(--tone-warning)]",
-  medium: "text-[var(--tone-info)]",
-  low: "text-[var(--tone-neutral)]",
+const PRIORITY_PILL: Record<string, string> = {
+  urgent: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  high: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  medium: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  low: "bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)] border border-[var(--tg-border)]",
+};
+
+const PRIORITY_DOT: Record<string, string> = {
+  urgent: "bg-[var(--tone-danger)]",
+  high: "bg-[var(--tone-warning)]",
+  medium: "bg-[var(--tone-info)]",
+  low: "bg-[var(--tone-neutral)]",
 };
 
 const STATUS_META: Record<string, { label: string; pill: string; dot: string }> = {
@@ -70,7 +70,8 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
   const due = dueMeta(task);
   const status = STATUS_META[task.status] ?? STATUS_META.todo;
-  const priorityAccent = PRIORITY_ACCENT[task.priority] ?? PRIORITY_ACCENT.medium;
+  const priorityPill = PRIORITY_PILL[task.priority] ?? PRIORITY_PILL.medium;
+  const priorityDot = PRIORITY_DOT[task.priority] ?? PRIORITY_DOT.medium;
   const isDone = task.status === "done";
 
   const assignee: AvatarUser = task.assignee ?? {
@@ -170,11 +171,8 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
           }
         }}
         className={clsx(
-          "group relative flex w-full gap-3 rounded-[var(--radius-2xl)] border border-[var(--tg-border)] border-l-[3px] bg-[var(--tg-card-bg)] p-4 text-left",
-          "shadow-[var(--shadow-sm)] hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:scale-[0.985] active:shadow-none",
-          "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)] transition-shadow",
+          "tf-task-card group flex w-full gap-3 p-4 text-left",
           "touch-pan-y select-none",
-          priorityAccent,
           isDone && "opacity-60",
         )}
         style={{ transform: `translateX(${dx}px)` }}
@@ -242,7 +240,8 @@ export function TaskCard({ task, onClick, onComplete }: TaskCardProps) {
               <span className={clsx("h-1.5 w-1.5 rounded-full", status.dot)} />
               {status.label}
             </span>
-            <span className={clsx("text-[11px] font-medium", PRIORITY_TEXT[task.priority])}>
+            <span className={clsx("tf-priority-pill", priorityPill)}>
+              <span className={clsx("h-1.5 w-1.5 rounded-full", priorityDot)} />
               {PRIORITY_LABEL[task.priority]}
             </span>
             {due ? (

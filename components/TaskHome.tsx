@@ -220,7 +220,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   return (
     <div className="tf-page flex min-h-screen flex-col pt-3">
       <div className="space-y-3 px-3">
-        <section className="tf-hero p-4">
+        <section className="tf-hero tf-animate-fade-up p-4">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--tg-hint)]">
               {workspaceLabel}
@@ -263,7 +263,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
             </div>
           ) : null}
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
+          <div className="tf-stagger mt-4 grid grid-cols-3 gap-2">
             <MetricTile
               icon={<Clock3 className="h-3.5 w-3.5" />}
               label="Open"
@@ -284,7 +284,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
           </div>
         </section>
 
-        <section className="tf-card p-3.5">
+        <section className="tf-card tf-animate-fade-up p-3.5" style={{ animationDelay: "80ms" }}>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--tg-hint)]" />
@@ -500,27 +500,31 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
                           {grouped[key].length}
                         </span>
                       </div>
-                      {grouped[key].map((t) => (
-                        <TaskCard
-                          key={t._id}
-                          task={t}
-                          onClick={() => goTask(t._id)}
-                          onComplete={handleComplete}
-                        />
-                      ))}
+                      <div className="tf-stagger flex flex-col gap-3">
+                        {grouped[key].map((t) => (
+                          <TaskCard
+                            key={t._id}
+                            task={t}
+                            onClick={() => goTask(t._id)}
+                            onComplete={handleComplete}
+                          />
+                        ))}
+                      </div>
                     </div>
                   ) : null,
                 )}
               </>
             ) : (
-              tasks.map((t) => (
-                <TaskCard
-                  key={t._id}
-                  task={t}
-                  onClick={() => goTask(t._id)}
-                  onComplete={handleComplete}
-                />
-              ))
+              <div className="tf-stagger flex flex-col gap-3">
+                {tasks.map((t) => (
+                  <TaskCard
+                    key={t._id}
+                    task={t}
+                    onClick={() => goTask(t._id)}
+                    onComplete={handleComplete}
+                  />
+                ))}
+              </div>
             )}
             <div ref={loadSentinelRef} className="h-2 w-full shrink-0" />
             {isLoadingMore ? (
@@ -545,7 +549,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
           type="button"
           aria-label="Create task"
           className={clsx(
-            "tf-btn-primary fixed right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full shadow-[var(--shadow-lg)]",
+            "tf-btn-primary tf-animate-scale-in fixed right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full shadow-[var(--shadow-lg)]",
             "min-h-[44px] min-w-[44px] transition active:scale-95",
             "bottom-[calc(4.7rem+env(safe-area-inset-bottom))]",
           )}
