@@ -71,50 +71,28 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
     setError(null);
   }, []);
 
-  const start = useCallback(() => {
-    const Ctor = getSpeechConstructor();
-    if (!Ctor) {
-      setError("Voice input is not supported in this browser.");
-      return;
-    }
-
-    // Abort and discard previous instance so we get a clean start each time.
-    if (recognitionRef.current) {
-      recognitionRef.current.onresult = null;
-      recognitionRef.current.onerror = null;
-      recognitionRef.current.onend = null;
-      try { recognitionRef.current.abort(); } catch { /* ignore */ }
-      recognitionRef.current = null;
-    }
-
-    // Reset transcript for the new session.
-    finalTranscriptRef.current = "";
-    setFinalTranscript("");
-    setInterimTranscript("");
-    setError(null);
-
+  const createRecognition = useCallback((Ctor: SpeechConstructor) => {
     const recognition = new Ctor();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = lang;
     recognition.onresult = (event) => {
-      let nextFinal = "";
-      let nextInterim = "";
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      // Rebuild from full results list every time — avoids duplication caused
+      // by browsers that incorrectly send resultIndex=0 on every event.
+      let fullFinal = "";
+      let currentInterim = "";
+      for (let i = 0; i < event.results.length; i += 1) {
         const result = event.results[i];
         const text = result[0]?.transcript ?? "";
         if (!text) continue;
         if (result.isFinal) {
-          nextFinal += `${text} `;
+          fullFinal += `${text} `;
         } else {
-          nextInterim += text;
+          currentInterim += text;
         }
       }
-      if (nextFinal) {
-        finalTranscriptRef.current = `${finalTranscriptRef.current}${nextFinal}`.trim();
-        setFinalTranscript(finalTranscriptRef.current);
-      }
-      setInterimTranscript(nextInterim.trim());
+      finalTranscriptRef.current = fullFinal.trim();
+      setFinalTranscript(finalTranscriptRef.current);
+      setInterimTranscript(currentInterim.trim());
     };
     recognition.onerror = (event) => {
       setError(toErrorMessage(event.error));
@@ -124,16 +102,46 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
       setInterimTranscript("");
       onStopRef.current?.(finalTranscriptRef.current);
     };
-    recognitionRef.current = recognition;
+    return recognition;
+  }, []);
 
+  const start = useCallback(() => {
+    const Ctor = getSpeechConstructor();
+    if (!Ctor) {
+      setError("Voice input is not supported in this browser.");
+      return;
+    }
+
+    // Lazy-create instance once; reuse to avoid re-triggering mic permission.
+    if (!recognitionRef.current) {
+      recognitionRef.current = createRecognition(Ctor);
+    }
+
+    // Reset transcript state for the new session.
+    finalTranscriptRef.current = "";
+    setFinalTranscript("");
+    setInterimTranscript("");
+    setError(null);
+
+    const recognition = recognitionRef.current;
+    recognition.lang = lang;
     try {
       recognition.start();
       setIsListening(true);
     } catch {
-      setError("Could not start voice input.");
-      setIsListening(false);
+      // Some mobile browsers refuse to restart a stopped instance.
+      // Recreate once and retry — this still reuses across most sessions.
+      try {
+        recognitionRef.current = createRecognition(Ctor);
+        recognitionRef.current.lang = lang;
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch {
+        setError("Could not start voice input.");
+        setIsListening(false);
+      }
     }
-  }, [lang]);
+  }, [lang, createRecognition]);
 
   const stop = useCallback(() => {
     const recognition = recognitionRef.current;
