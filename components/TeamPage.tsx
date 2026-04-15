@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search, Users } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +10,7 @@ import { haptic, hideBackButton } from "@/lib/tma";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SignInNotice } from "@/components/SignInNotice";
+import { hasRole } from "@/lib/rbac";
 import type { IDepartment, Role } from "@/types";
 
 type TeamUser = {
@@ -35,8 +37,10 @@ const ROLE_COLOR: Record<Role, string> = {
 };
 
 export function TeamPage() {
+  const router = useRouter();
   const { user, token } = useAuth();
   const isLoading = useAppStore((s) => s.isLoading);
+  const canViewDetails = user ? hasRole(user.role, "manager") : false;
 
   const [users, setUsers] = useState<TeamUser[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -181,30 +185,46 @@ export function TeamPage() {
         ) : (
           <ul className="flex flex-col gap-2">
             {sorted.map((u) => (
-              <li
-                key={u._id}
-                className="tf-card flex items-center gap-3 px-3 py-3"
-              >
-                <Avatar user={u} size="md" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-semibold">{u.name}</span>
-                    <span className={clsx(
-                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                      ROLE_COLOR[u.role],
-                    )}>
-                      {ROLE_LABEL[u.role]}
-                    </span>
+              <li key={u._id}>
+                <button
+                  type="button"
+                  disabled={!canViewDetails}
+                  onClick={() => {
+                    if (!canViewDetails) return;
+                    haptic("light");
+                    router.push(`/admin/analytics/employees/${u._id}`);
+                  }}
+                  className={clsx(
+                    "tf-card flex w-full items-center gap-3 px-3 py-3 text-left",
+                    canViewDetails && "active:scale-[0.99] transition-transform",
+                  )}
+                >
+                  <Avatar user={u} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-semibold">{u.name}</span>
+                      <span className={clsx(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                        ROLE_COLOR[u.role],
+                      )}>
+                        {ROLE_LABEL[u.role]}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      {u.username ? (
+                        <span className="text-xs text-[var(--tg-link)]">@{u.username}</span>
+                      ) : null}
+                      {u.departmentPath ? (
+                        <span className="truncate text-xs text-[var(--tg-hint)]">{u.departmentPath}</span>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="mt-0.5 flex items-center gap-2">
-                    {u.username ? (
-                      <span className="text-xs text-[var(--tg-link)]">@{u.username}</span>
-                    ) : null}
-                    {u.departmentPath ? (
-                      <span className="truncate text-xs text-[var(--tg-hint)]">{u.departmentPath}</span>
-                    ) : null}
-                  </div>
-                </div>
+                  {canViewDetails ? (
+                    <svg className="h-4 w-4 shrink-0 text-[var(--tg-hint)]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  ) : null}
+                </button>
               </li>
             ))}
           </ul>

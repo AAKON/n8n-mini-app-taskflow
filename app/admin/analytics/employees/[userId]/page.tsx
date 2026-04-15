@@ -59,16 +59,18 @@ export default function EmployeeDetailPage() {
     return () => hideBackButton();
   }, [router]);
 
+  const canView = user?.role === "admin" || user?.role === "department_head" || user?.role === "manager";
+
   useEffect(() => {
     if (!user) return;
-    if (user.role !== "admin" && user.role !== "department_head") {
+    if (!canView) {
       router.replace("/");
     }
-  }, [user, router]);
+  }, [user, canView, router]);
 
   useEffect(() => {
     if (!token || !userId || !user) return;
-    if (user.role !== "admin" && user.role !== "department_head") return;
+    if (!canView) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -105,7 +107,7 @@ export default function EmployeeDetailPage() {
   }, [token, userId, user]);
 
   if (!token || !user) return <SignInNotice />;
-  if (user.role !== "admin" && user.role !== "department_head") {
+  if (!canView) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Spinner />
