@@ -201,10 +201,6 @@ export function CreateTaskSheet({
       setSubmitErr("Title is required");
       return;
     }
-    if (!isEdit && !departmentPath.trim()) {
-      setSubmitErr("Department is required");
-      return;
-    }
     setSubmitting(true);
     try {
       if (isEdit && editTask) {
@@ -244,9 +240,10 @@ export function CreateTaskSheet({
         return;
       }
 
+      const resolvedDept = departmentPath.trim() || user?.departmentPath || "";
       const body: Record<string, unknown> = {
         title: title.trim(),
-        departmentPath: departmentPath.trim(),
+        departmentPath: resolvedDept,
         priority,
         description: description || undefined,
       };
@@ -286,6 +283,7 @@ export function CreateTaskSheet({
     }
   }, [
     token,
+    user,
     title,
     description,
     priority,

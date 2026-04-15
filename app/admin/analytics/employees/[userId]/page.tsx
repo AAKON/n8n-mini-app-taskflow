@@ -222,6 +222,8 @@ export default function EmployeeDetailPage() {
             </div>
           </section>
 
+          <MonthHeatmap tasks={tasks} />
+
           <section className="tf-card tf-animate-fade-up p-4" style={{ animationDelay: "80ms" }}>
             <p className="text-xs font-semibold text-[var(--tg-hint)]">
               Avg. completion time
@@ -272,6 +274,82 @@ export default function EmployeeDetailPage() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function MonthHeatmap({ tasks }: { tasks: TaskListTask[] }) {
+  const today = dayjs();
+  const startOfMonth = today.startOf("month");
+  const daysInMonth = today.daysInMonth();
+
+  const counts: Record<number, { open: number; done: number }> = {};
+  for (let d = 1; d <= daysInMonth; d++) counts[d] = { open: 0, done: 0 };
+
+  for (const task of tasks) {
+    if (!task.dueDate) continue;
+    const d = dayjs(task.dueDate);
+    if (d.year() !== today.year() || d.month() !== today.month()) continue;
+    const day = d.date();
+    if (task.status === "done") counts[day]!.done++;
+    else counts[day]!.open++;
+  }
+
+  const maxCount = Math.max(...Object.values(counts).map((c) => c.open + c.done), 1);
+  const startDow = startOfMonth.day();
+  const cells: (number | null)[] = [
+    ...Array.from({ length: startDow }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  function intensity(day: number) {
+    const total = counts[day]!.open + counts[day]!.done;
+    if (total === 0) return 0;
+    return Math.min(4, Math.ceil((total / maxCount) * 4));
+  }
+
+  const cellColor = [
+    "bg-[var(--tg-border)] text-[var(--tg-hint)]",
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    "bg-emerald-200 text-emerald-800 dark:bg-emerald-800/50 dark:text-emerald-200",
+    "bg-emerald-400 text-white dark:bg-emerald-700 dark:text-white",
+    "bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white",
+  ];
+
+  return (
+    <section className="tf-card tf-animate-fade-up p-4" style={{ animationDelay: "40ms" }}>
+      <p className="mb-3 text-xs font-semibold text-[var(--tg-hint)]">
+        {today.format("MMMM YYYY")} · Due date heatmap
+      </p>
+      <div className="grid grid-cols-7 gap-1">
+        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+          <div key={d} className="pb-1 text-center text-[9px] font-semibold text-[var(--tg-hint)]">{d}</div>
+        ))}
+        {cells.map((day, i) =>
+          day === null ? (
+            <div key={`e-${i}`} />
+          ) : (
+            <div
+              key={day}
+              title={`${counts[day]!.open + counts[day]!.done} task(s) due`}
+              className={clsx(
+                "flex h-7 w-full items-center justify-center rounded-md text-[10px] font-semibold transition-transform active:scale-90",
+                cellColor[intensity(day)],
+                day === today.date() && "ring-2 ring-[var(--tg-button)] ring-offset-1",
+              )}
+            >
+              {day}
+            </div>
+          ),
+        )}
+      </div>
+      <div className="mt-3 flex items-center justify-end gap-1.5">
+        <span className="text-[9px] text-[var(--tg-hint)]">Less</span>
+        {cellColor.map((cls, i) => (
+          <div key={i} className={clsx("h-3 w-3 rounded-sm", cls)} />
+        ))}
+        <span className="text-[9px] text-[var(--tg-hint)]">More</span>
+      </div>
+    </section>
   );
 }
 
