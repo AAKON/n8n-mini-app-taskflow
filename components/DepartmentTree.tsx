@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Pencil, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import type { DepartmentNode } from "@/lib/department-utils";
 import { getDepth } from "@/lib/department-utils";
 
@@ -10,6 +10,7 @@ export type DepartmentTreeProps = {
   onSelect?: (node: DepartmentNode) => void;
   onAddChild?: (node: DepartmentNode) => void;
   onEdit?: (node: DepartmentNode) => void;
+  onDelete?: (node: DepartmentNode) => void;
   showAdminActions?: boolean;
   headName: (headId?: string) => string;
   memberCount: (path: string) => number;
@@ -32,6 +33,7 @@ export function DepartmentTree({
   onSelect,
   onAddChild,
   onEdit,
+  onDelete,
   showAdminActions,
   headName,
   memberCount,
@@ -74,6 +76,7 @@ export function DepartmentTree({
           onSelect={onSelect}
           onAddChild={onAddChild}
           onEdit={onEdit}
+          onDelete={onDelete}
           showAdminActions={showAdminActions}
           headName={headName}
           memberCount={memberCount}
@@ -90,6 +93,7 @@ function TreeRows({
   onSelect,
   onAddChild,
   onEdit,
+  onDelete,
   showAdminActions,
   headName,
   memberCount,
@@ -100,6 +104,7 @@ function TreeRows({
   onSelect?: (node: DepartmentNode) => void;
   onAddChild?: (node: DepartmentNode) => void;
   onEdit?: (node: DepartmentNode) => void;
+  onDelete?: (node: DepartmentNode) => void;
   showAdminActions?: boolean;
   headName: (headId?: string) => string;
   memberCount: (path: string) => number;
@@ -161,10 +166,7 @@ function TreeRows({
           <div className="flex shrink-0 gap-1 pr-1">
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit?.(node);
-              }}
+              onClick={(e) => { e.stopPropagation(); onEdit?.(node); }}
               className="tf-btn-secondary flex h-9 w-9 items-center justify-center rounded-lg text-[var(--tg-text)]"
               aria-label="Edit department"
             >
@@ -172,15 +174,22 @@ function TreeRows({
             </button>
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddChild?.(node);
-              }}
+              onClick={(e) => { e.stopPropagation(); onAddChild?.(node); }}
               className="tf-btn-secondary flex h-9 w-9 items-center justify-center rounded-lg text-[var(--tg-text)]"
               aria-label="Add child department"
             >
               <Plus className="h-4 w-4" />
             </button>
+            {!hasChildren && memberCount(node.path) === 0 ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDelete?.(node); }}
+                className="tf-btn-secondary flex h-9 w-9 items-center justify-center rounded-lg text-[var(--tone-danger)]"
+                aria-label="Delete department"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -195,6 +204,7 @@ function TreeRows({
               onSelect={onSelect}
               onAddChild={onAddChild}
               onEdit={onEdit}
+              onDelete={onDelete}
               showAdminActions={showAdminActions}
               headName={headName}
               memberCount={memberCount}

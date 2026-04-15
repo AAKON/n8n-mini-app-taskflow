@@ -39,7 +39,7 @@ export default function AdminPage() {
   const token = useAppStore((s) => s.token);
   const { user } = useAuth();
 
-  const [tab, setTab] = useState<"users" | "stats">("users");
+  const [tab, setTab] = useState<"users" | "stats" | "departments">("users");
   const [users, setUsers] = useState<IUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [usersErr, setUsersErr] = useState<string | null>(null);
@@ -146,34 +146,44 @@ export default function AdminPage() {
       <header className="tf-topbar px-4 py-3">
         <h1 className="text-lg font-bold">Admin</h1>
         <div className="mt-3 flex gap-1 rounded-lg border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] p-1">
-          <button
-            type="button"
-            onClick={() => setTab("users")}
-            className={clsx(
-              "min-h-[40px] flex-1 rounded-md border text-sm font-medium transition",
-              tab === "users"
-                ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
-                : "border-transparent text-[var(--tg-text)]",
-            )}
-          >
-            Users
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("stats")}
-            className={clsx(
-              "min-h-[40px] flex-1 rounded-md border text-sm font-medium transition",
-              tab === "stats"
-                ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
-                : "border-transparent text-[var(--tg-text)]",
-            )}
-          >
-            Stats
-          </button>
+          {(["users", "stats", "departments"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={clsx(
+                "min-h-[40px] flex-1 rounded-md border text-xs font-medium capitalize transition",
+                tab === t
+                  ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
+                  : "border-transparent text-[var(--tg-text)]",
+              )}
+            >
+              {t === "departments" ? "Depts" : t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
         </div>
       </header>
 
-      {tab === "users" ? (
+      {tab === "departments" ? (
+        <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--tg-secondary-bg)]">
+            <svg className="h-8 w-8 text-[var(--tg-hint)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[var(--tg-text)]">Department Management</p>
+            <p className="mt-1 text-xs text-[var(--tg-hint)]">Create, edit and organise departments and assign department heads.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/departments")}
+            className="tf-btn-primary min-h-[48px] w-full rounded-2xl text-sm font-semibold"
+          >
+            Open Departments
+          </button>
+        </div>
+      ) : tab === "users" ? (
         <div className="px-3 pt-3">
           {usersErr ? (
             <p className="text-center text-sm text-[var(--tone-danger)]">{usersErr}</p>

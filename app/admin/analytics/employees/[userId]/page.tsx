@@ -222,7 +222,7 @@ export default function EmployeeDetailPage() {
             </div>
           </section>
 
-          <MonthHeatmap tasks={tasks} />
+          <MonthHeatmap tasks={tasks} onTaskClick={(id) => router.push(`/tasks/${id}`)} />
 
           <section className="tf-card tf-animate-fade-up p-4" style={{ animationDelay: "80ms" }}>
             <p className="text-xs font-semibold text-[var(--tg-hint)]">
@@ -277,10 +277,17 @@ export default function EmployeeDetailPage() {
   );
 }
 
-function MonthHeatmap({ tasks }: { tasks: TaskListTask[] }) {
+function MonthHeatmap({
+  tasks,
+  onTaskClick,
+}: {
+  tasks: TaskListTask[];
+  onTaskClick: (id: string) => void;
+}) {
   const today = dayjs();
   const startOfMonth = today.startOf("month");
   const daysInMonth = today.daysInMonth();
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const counts: Record<number, { open: number; done: number }> = {};
   for (let d = 1; d <= daysInMonth; d++) counts[d] = { open: 0, done: 0 };
@@ -315,6 +322,18 @@ function MonthHeatmap({ tasks }: { tasks: TaskListTask[] }) {
     "bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white",
   ];
 
+  const dayTasks = selectedDay
+    ? tasks.filter((t) => {
+        if (!t.dueDate) return false;
+        const d = dayjs(t.dueDate);
+        return (
+          d.year() === today.year() &&
+          d.month() === today.month() &&
+          d.date() === selectedDay
+        );
+      })
+    : [];
+
   return (
     <section className="tf-card tf-animate-fade-up p-4" style={{ animationDelay: "40ms" }}>
       <p className="mb-3 text-xs font-semibold text-[var(--tg-hint)]">
@@ -328,17 +347,19 @@ function MonthHeatmap({ tasks }: { tasks: TaskListTask[] }) {
           day === null ? (
             <div key={`e-${i}`} />
           ) : (
-            <div
+            <button
               key={day}
-              title={`${counts[day]!.open + counts[day]!.done} task(s) due`}
+              type="button"
+              onClick={() => setSelectedDay(selectedDay === day ? null : day)}
               className={clsx(
                 "flex h-7 w-full items-center justify-center rounded-md text-[10px] font-semibold transition-transform active:scale-90",
                 cellColor[intensity(day)],
                 day === today.date() && "ring-2 ring-[var(--tg-button)] ring-offset-1",
+                selectedDay === day && "scale-110 shadow-md ring-2 ring-[var(--tg-button)]",
               )}
             >
               {day}
-            </div>
+            </button>
           ),
         )}
       </div>
@@ -349,6 +370,54 @@ function MonthHeatmap({ tasks }: { tasks: TaskListTask[] }) {
         ))}
         <span className="text-[9px] text-[var(--tg-hint)]">More</span>
       </div>
+
+      {selectedDay !== null && (
+        <div className="mt-4 border-t border-[var(--tg-divider)] pt-4">
+          <p className="mb-2 text-xs font-semibold text-[var(--tg-hint)]">
+            {today.format("MMMM")} {selectedDay} · {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
+          </p>
+          {dayTasks.length === 0 ? (
+            <p className="text-xs italic text-[var(--tg-hint)]">No tasks due on this day.</p>
+          ) : (
+            <ul className="space-y-2">
+              {dayTasks.map((t) => (
+                <li key={t._id}>
+                  <button
+                    type="button"
+                    onClick={() => onTaskClick(t._id)}
+                    className={clsx(
+                      "w-full rounded-xl border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] px-3 py-2.5 text-left transition active:scale-[0.98]",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-medium text-[var(--tg-text)]">
+                        {t.title}
+                      </span>
+                      <span className={clsx(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
+                        t.status === "done"
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                          : t.status === "in_progress"
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                            : t.status === "review"
+                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                              : "bg-[var(--tg-border)] text-[var(--tg-hint)]",
+                      )}>
+                        {t.status.replace("_", " ")}
+                      </span>
+                    </div>
+                    {t.priority && (
+                      <p className="mt-0.5 text-[10px] capitalize text-[var(--tg-hint)]">
+                        {t.priority} priority
+                      </p>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </section>
   );
 }

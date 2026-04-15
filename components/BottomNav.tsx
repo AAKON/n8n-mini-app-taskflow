@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Building2, Calendar, Home, Kanban, LayoutGrid, Users } from "lucide-react";
+import { BarChart3, Calendar, Home, Kanban, LayoutGrid, Users } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/hooks/useAuth";
 import { haptic } from "@/lib/tma";
@@ -31,9 +31,9 @@ function itemsForRole(role: Role | undefined): NavItem[] {
     return [
       { href: "/", label: "Home", icon: Home },
       { href: "/tasks/board", label: "Board", icon: Kanban },
+      { href: "/tasks/calendar", label: "Calendar", icon: Calendar },
       { href: "/admin/analytics", label: "Stats", icon: BarChart3 },
       { href: "/team", label: "Team", icon: Users },
-      { href: "/departments", label: "Depts", icon: Building2 },
     ];
   }
   return [

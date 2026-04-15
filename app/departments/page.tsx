@@ -45,6 +45,10 @@ export default function DepartmentsPage() {
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editErr, setEditErr] = useState<string | null>(null);
 
+  const [deleteNode, setDeleteNode] = useState<DepartmentNode | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
+
   const canView =
     user?.role === "admin" || user?.role === "department_head";
   const isAdmin = user?.role === "admin";
@@ -240,6 +244,30 @@ export default function DepartmentsPage() {
     }
   };
 
+  const submitDelete = async () => {
+    if (!token || !deleteNode) return;
+    setDeleteErr(null);
+    setDeleteSubmitting(true);
+    try {
+      const res = await fetch(`/api/departments/${deleteNode._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json()) as { success?: boolean; error?: string };
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || "Delete failed");
+      }
+      haptic("success");
+      setDeleteNode(null);
+      await loadAll();
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : "Request failed");
+      haptic("error");
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  };
+
   const sortedUsers = useMemo(
     () => [...users].sort((a, b) => a.name.localeCompare(b.name)),
     [users],
@@ -289,6 +317,7 @@ export default function DepartmentsPage() {
             memberCount={memberCount}
             onAddChild={isAdmin ? (n) => openAdd(n.path) : undefined}
             onEdit={isAdmin ? openEdit : undefined}
+            onDelete={isAdmin ? (n) => { setDeleteNode(n); setDeleteErr(null); } : undefined}
           />
         )}
       </div>
@@ -329,6 +358,37 @@ export default function DepartmentsPage() {
             className="tf-btn-primary mt-2 min-h-[48px] rounded-lg text-sm font-medium disabled:opacity-50"
           >
             {addSubmitting ? "Creating…" : "Create"}
+          </button>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        isOpen={!!deleteNode}
+        onClose={() => { setDeleteNode(null); setDeleteErr(null); }}
+        title="Delete department"
+      >
+        <div className="flex flex-col gap-3 pt-2">
+          <p className="text-sm text-[var(--tg-text)]">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold">{deleteNode?.name}</span>? This cannot be undone.
+          </p>
+          {deleteErr ? (
+            <p className="text-sm text-[var(--tone-danger)]">{deleteErr}</p>
+          ) : null}
+          <button
+            type="button"
+            disabled={deleteSubmitting}
+            onClick={() => void submitDelete()}
+            className="min-h-[48px] rounded-lg bg-[var(--tone-danger)] text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {deleteSubmitting ? "Deleting…" : "Delete"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setDeleteNode(null); setDeleteErr(null); }}
+            className="tf-btn-secondary min-h-[44px] rounded-lg text-sm font-medium"
+          >
+            Cancel
           </button>
         </div>
       </BottomSheet>
