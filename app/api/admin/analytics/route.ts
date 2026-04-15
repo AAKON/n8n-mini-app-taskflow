@@ -1,4 +1,5 @@
 import Task from "@/models/Task";
+import User from "@/models/User";
 import { apiError, apiResponse, withAuth } from "@/lib/api-helpers";
 import { buildTaskListFilter } from "@/lib/task-filters";
 
@@ -16,6 +17,12 @@ export const GET = withAuth(async (_req, user) => {
     trend: { _id: string; created: number; done: number }[];
     avg: { avgMs: number }[];
     deptOverdue: { _id: string; overdue: number; total: number }[];
+    employees: {
+      _id: string | null;
+      total: number;
+      done: number;
+      overdue: number;
+    }[];
   }>([
     { $match: filter },
     {
@@ -120,6 +127,35 @@ export const GET = withAuth(async (_req, user) => {
           { $sort: { overdue: -1 } },
           { $limit: 8 },
         ],
+        employees: [
+          { $match: { assigneeId: { $ne: null } } },
+          {
+            $group: {
+              _id: "$assigneeId",
+              total: { $sum: 1 },
+              done: {
+                $sum: { $cond: [{ $eq: ["$status", "done"] }, 1, 0] },
+              },
+              overdue: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $ne: ["$status", "done"] },
+                        { $ne: ["$dueDate", null] },
+                        { $lt: ["$dueDate", startOfDay] },
+                      ],
+                    },
+                    1,
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+          { $sort: { total: -1 } },
+          { $limit: 20 },
+        ],
       },
     },
   ]);
@@ -146,5 +182,36 @@ export const GET = withAuth(async (_req, user) => {
     rate: r.total > 0 ? r.overdue / r.total : 0,
   }));
 
-  return apiResponse({ trend, avgHours, departments });
+  const employeeRows = (agg?.employees ?? []).filter((r) => r._id);
+  const userIds = employeeRows.map((r) => r._id);
+  const userDocs = userIds.length
+    ? await User.find({ _id: { $in: userIds } })
+        .select({ name: 1, username: 1, avatarUrl: 1, departmentPath: 1 })
+        .lean<
+          {
+            _id: unknown;
+            name: string;
+            username?: string;
+            avatarUrl?: string;
+            departmentPath?: string;
+          }[]
+        >()
+    : [];
+  const userMap = new Map(userDocs.map((u) => [String(u._id), u]));
+  const employees = employeeRows.map((r) => {
+    const u = userMap.get(String(r._id));
+    return {
+      userId: String(r._id),
+      name: u?.name || "Unknown",
+      username: u?.username,
+      avatarUrl: u?.avatarUrl,
+      departmentPath: u?.departmentPath || "",
+      total: r.total,
+      done: r.done,
+      overdue: r.overdue,
+      completionRate: r.total > 0 ? r.done / r.total : 0,
+    };
+  });
+
+  return apiResponse({ trend, avgHours, departments, employees });
 });

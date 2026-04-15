@@ -6,7 +6,20 @@ import dayjs from "dayjs";
 import { useAuth } from "@/hooks/useAuth";
 import { SignInNotice } from "@/components/SignInNotice";
 import { Spinner } from "@/components/ui/Spinner";
+import { Avatar } from "@/components/ui/Avatar";
 import { hideBackButton } from "@/lib/tma";
+
+type EmployeeStat = {
+  userId: string;
+  name: string;
+  username?: string;
+  avatarUrl?: string;
+  departmentPath: string;
+  total: number;
+  done: number;
+  overdue: number;
+  completionRate: number;
+};
 
 type Analytics = {
   trend: { date: string; created: number; done: number }[];
@@ -17,6 +30,7 @@ type Analytics = {
     overdue: number;
     rate: number;
   }[];
+  employees: EmployeeStat[];
 };
 
 export default function AnalyticsPage() {
@@ -94,6 +108,53 @@ export default function AnalyticsPage() {
               {data.avgHours}
               <span className="ml-1 text-sm font-medium text-[var(--tg-hint)]">hours</span>
             </p>
+          </section>
+
+          <section className="tf-card p-4">
+            <p className="mb-3 text-sm font-semibold">Per employee</p>
+            {data.employees.length === 0 ? (
+              <p className="text-xs text-[var(--tg-hint)]">No data.</p>
+            ) : (
+              <ul className="space-y-3">
+                {data.employees.map((e) => {
+                  const donePct = Math.round(e.completionRate * 100);
+                  return (
+                    <li key={e.userId} className="flex items-center gap-3">
+                      <Avatar
+                        user={{
+                          _id: e.userId,
+                          name: e.name,
+                          username: e.username,
+                          avatarUrl: e.avatarUrl,
+                        }}
+                        size="sm"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate text-xs font-semibold">
+                            {e.name}
+                          </span>
+                          <span className="shrink-0 text-[10px] tabular-nums text-[var(--tg-hint)]">
+                            {e.done}/{e.total} · {donePct}%
+                          </span>
+                        </div>
+                        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--tg-border)]">
+                          <div
+                            className="h-full rounded-full bg-[var(--tone-success)] transition-[width]"
+                            style={{ width: `${donePct}%` }}
+                          />
+                        </div>
+                        {e.overdue > 0 ? (
+                          <p className="mt-1 text-[10px] text-[var(--tone-danger)]">
+                            {e.overdue} overdue
+                          </p>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
 
           <section className="tf-card p-4">
