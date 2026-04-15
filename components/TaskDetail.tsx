@@ -242,7 +242,6 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       : { _id: "none", name: "Unassigned" };
 
   const isOverdue = task.dueDate && task.status !== "done" && dayjs(task.dueDate).isBefore(dayjs().startOf("day"));
-  const hasStartDate = !!task.startDate;
 
   return (
     <div className={clsx(
