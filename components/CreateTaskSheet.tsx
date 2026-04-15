@@ -95,6 +95,8 @@ export function CreateTaskSheet({
   const [voiceInfo, setVoiceInfo] = useState<string | null>(null);
   const [voiceWarn, setVoiceWarn] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Forwarding ref so the onStop callback always calls the latest applyVoiceToForm.
+  const applyVoiceRef = useRef<((transcript: string) => void) | undefined>(undefined);
   const {
     isSupported: voiceSupported,
     isListening: voiceListening,
@@ -104,7 +106,9 @@ export function CreateTaskSheet({
     start: startVoice,
     stop: stopVoice,
     reset: resetVoice,
-  } = useSpeechRecognition();
+  } = useSpeechRecognition("en-US", (transcript) => {
+    applyVoiceRef.current?.(transcript);
+  });
 
   const resetFromProps = useCallback(() => {
     if (editTask) {
@@ -214,8 +218,8 @@ export function CreateTaskSheet({
     );
   }, [users, userQuery, departmentPath]);
 
-  const applyVoiceToForm = useCallback(() => {
-    const transcript = finalTranscript.trim();
+  const applyVoiceToForm = useCallback((transcriptArg?: string) => {
+    const transcript = (transcriptArg ?? finalTranscript).trim();
     if (!transcript) {
       setVoiceWarn("No voice transcript to apply yet.");
       return;
@@ -264,6 +268,9 @@ export function CreateTaskSheet({
     }
     setVoiceWarn(warnings.length > 0 ? warnings.join(" ") : null);
   }, [departmentPath, finalTranscript, users]);
+
+  // Keep forwarding ref up to date so onStop always uses fresh callback.
+  applyVoiceRef.current = applyVoiceToForm;
 
   const submit = useCallback(async () => {
     if (!token) return;
@@ -446,15 +453,15 @@ export function CreateTaskSheet({
                   !voiceSupported && "opacity-50",
                 )}
               >
-                {voiceListening ? "Stop listening" : "Start listening"}
+                {voiceListening ? "Stop & apply" : "Start listening"}
               </button>
               <button
                 type="button"
-                onClick={applyVoiceToForm}
+                onClick={() => applyVoiceToForm()}
                 disabled={voiceListening || !finalTranscript.trim()}
                 className="min-h-[42px] rounded-lg border border-[var(--tg-border)] bg-[var(--tg-bg)] px-3 text-sm font-medium text-[var(--tg-text)] disabled:opacity-50"
               >
-                Apply transcript
+                Re-apply
               </button>
               <button
                 type="button"
@@ -475,8 +482,7 @@ export function CreateTaskSheet({
               </p>
             ) : (
               <p className="mt-2 text-xs text-[var(--tg-hint)]">
-                Speak naturally, then apply. Example: create task prepare sprint
-                report by Friday high priority assign to @alex.
+                Speak naturally — form fills automatically when you stop. Example: prepare sprint report by Friday high priority assign to @alex.
               </p>
             )}
             {finalTranscript || interimTranscript ? (

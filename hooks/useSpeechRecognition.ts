@@ -53,8 +53,11 @@ function toErrorMessage(code?: string): string {
   }
 }
 
-export function useSpeechRecognition(lang = "en-US") {
+export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: string) => void) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const finalTranscriptRef = useRef("");
+  const onStopRef = useRef(onStop);
+  onStopRef.current = onStop;
   const [isListening, setIsListening] = useState(false);
   const [isSupported] = useState(() => !!getSpeechConstructor());
   const [finalTranscript, setFinalTranscript] = useState("");
@@ -62,6 +65,7 @@ export function useSpeechRecognition(lang = "en-US") {
   const [error, setError] = useState<string | null>(null);
 
   const reset = useCallback(() => {
+    finalTranscriptRef.current = "";
     setFinalTranscript("");
     setInterimTranscript("");
     setError(null);
@@ -74,43 +78,54 @@ export function useSpeechRecognition(lang = "en-US") {
       return;
     }
 
-    if (!recognitionRef.current) {
-      const recognition = new Ctor();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.onresult = (event) => {
-        let nextFinal = "";
-        let nextInterim = "";
-        for (let i = event.resultIndex; i < event.results.length; i += 1) {
-          const result = event.results[i];
-          const text = result[0]?.transcript ?? "";
-          if (!text) continue;
-          if (result.isFinal) {
-            nextFinal += `${text} `;
-          } else {
-            nextInterim += text;
-          }
-        }
-        if (nextFinal) {
-          setFinalTranscript((prev) => `${prev}${nextFinal}`.trim());
-        }
-        setInterimTranscript(nextInterim.trim());
-      };
-      recognition.onerror = (event) => {
-        setError(toErrorMessage(event.error));
-      };
-      recognition.onend = () => {
-        setIsListening(false);
-        setInterimTranscript("");
-      };
-      recognitionRef.current = recognition;
+    // Abort and discard previous instance so we get a clean start each time.
+    if (recognitionRef.current) {
+      recognitionRef.current.onresult = null;
+      recognitionRef.current.onerror = null;
+      recognitionRef.current.onend = null;
+      try { recognitionRef.current.abort(); } catch { /* ignore */ }
+      recognitionRef.current = null;
     }
 
-    const recognition = recognitionRef.current;
-    if (!recognition) return;
-    recognition.lang = lang;
-    setError(null);
+    // Reset transcript for the new session.
+    finalTranscriptRef.current = "";
+    setFinalTranscript("");
     setInterimTranscript("");
+    setError(null);
+
+    const recognition = new Ctor();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = lang;
+    recognition.onresult = (event) => {
+      let nextFinal = "";
+      let nextInterim = "";
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        const text = result[0]?.transcript ?? "";
+        if (!text) continue;
+        if (result.isFinal) {
+          nextFinal += `${text} `;
+        } else {
+          nextInterim += text;
+        }
+      }
+      if (nextFinal) {
+        finalTranscriptRef.current = `${finalTranscriptRef.current}${nextFinal}`.trim();
+        setFinalTranscript(finalTranscriptRef.current);
+      }
+      setInterimTranscript(nextInterim.trim());
+    };
+    recognition.onerror = (event) => {
+      setError(toErrorMessage(event.error));
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      setInterimTranscript("");
+      onStopRef.current?.(finalTranscriptRef.current);
+    };
+    recognitionRef.current = recognition;
+
     try {
       recognition.start();
       setIsListening(true);
