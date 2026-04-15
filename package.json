@@ -12,6 +12,7 @@
   "dependencies": {
     "@twa-dev/sdk": "^8.0.2",
     "@types/jsonwebtoken": "^9.0.10",
+    "chrono-node": "^2.9.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.20",
     "jsonwebtoken": "^9.0.3",

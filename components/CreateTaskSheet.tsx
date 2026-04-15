@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import clsx from "clsx";
 import { useAppStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import {
   hideMainButton,
   haptic,
@@ -19,6 +20,10 @@ import {
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { TaskListTask } from "@/components/TaskCard";
 import type { ITask, TaskPriority, TaskStatus } from "@/types";
+import {
+  parseVoiceTaskTranscript,
+  resolveVoiceAssignee,
+} from "@/lib/voice-task-parser";
 
 type DeptRow = {
   _id: string;
@@ -87,7 +92,19 @@ export function CreateTaskSheet({
   const [departments, setDepartments] = useState<DeptRow[]>([]);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [submitErr, setSubmitErr] = useState<string | null>(null);
+  const [voiceInfo, setVoiceInfo] = useState<string | null>(null);
+  const [voiceWarn, setVoiceWarn] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const {
+    isSupported: voiceSupported,
+    isListening: voiceListening,
+    finalTranscript,
+    interimTranscript,
+    error: voiceErr,
+    start: startVoice,
+    stop: stopVoice,
+    reset: resetVoice,
+  } = useSpeechRecognition();
 
   const resetFromProps = useCallback(() => {
     if (editTask) {
@@ -112,7 +129,10 @@ export function CreateTaskSheet({
     setUserQuery("");
     setLoadErr(null);
     setSubmitErr(null);
-  }, [editTask, user]);
+    setVoiceInfo(null);
+    setVoiceWarn(null);
+    resetVoice();
+  }, [editTask, resetVoice, user]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -193,6 +213,57 @@ export function CreateTaskSheet({
         (u.username && u.username.toLowerCase().includes(q)),
     );
   }, [users, userQuery, departmentPath]);
+
+  const applyVoiceToForm = useCallback(() => {
+    const transcript = finalTranscript.trim();
+    if (!transcript) {
+      setVoiceWarn("No voice transcript to apply yet.");
+      return;
+    }
+
+    const parsed = parseVoiceTaskTranscript(transcript);
+    const warnings = [...parsed.warnings];
+    const applied: string[] = [];
+
+    if (parsed.title) {
+      setTitle(parsed.title);
+      applied.push("title");
+    }
+    if (parsed.description) {
+      setDescription(parsed.description);
+      applied.push("description");
+    }
+    if (parsed.priority) {
+      setPriority(parsed.priority);
+      applied.push("priority");
+    }
+    if (parsed.dueDate) {
+      setDueStr(dayjs(parsed.dueDate).format("YYYY-MM-DD"));
+      applied.push("due date");
+    }
+
+    if (parsed.assigneeHint) {
+      const match = resolveVoiceAssignee({
+        assigneeHint: parsed.assigneeHint,
+        users,
+        departmentPath,
+      });
+      if (match.user) {
+        setAssigneeId(match.user._id);
+        setUserQuery(match.user.name);
+        applied.push("assignee");
+      } else if (match.warning) {
+        warnings.push(match.warning);
+      }
+    }
+
+    if (applied.length > 0) {
+      setVoiceInfo(`Applied: ${applied.join(", ")}.`);
+    } else {
+      setVoiceInfo(null);
+    }
+    setVoiceWarn(warnings.length > 0 ? warnings.join(" ") : null);
+  }, [departmentPath, finalTranscript, users]);
 
   const submit = useCallback(async () => {
     if (!token) return;
@@ -330,6 +401,15 @@ export function CreateTaskSheet({
         {submitErr ? (
           <p className="text-xs text-red-500">{submitErr}</p>
         ) : null}
+        {voiceErr ? (
+          <p className="text-xs text-red-500">{voiceErr}</p>
+        ) : null}
+        {voiceWarn ? (
+          <p className="text-xs text-amber-600">{voiceWarn}</p>
+        ) : null}
+        {voiceInfo ? (
+          <p className="text-xs text-emerald-600">{voiceInfo}</p>
+        ) : null}
 
         <label className="block text-xs font-medium text-[var(--tg-hint)]">
           Title
@@ -339,6 +419,76 @@ export function CreateTaskSheet({
             className="tf-input mt-1 min-h-[44px] px-3 text-sm"
           />
         </label>
+
+        {!isEdit ? (
+          <div className="rounded-xl border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)]/60 p-3">
+            <p className="text-xs font-medium text-[var(--tg-hint)]">
+              Voice input (beta)
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setVoiceInfo(null);
+                  setVoiceWarn(null);
+                  if (voiceListening) {
+                    stopVoice();
+                  } else {
+                    startVoice();
+                  }
+                }}
+                disabled={!voiceSupported}
+                className={clsx(
+                  "min-h-[42px] rounded-lg border px-3 text-sm font-medium transition",
+                  voiceListening
+                    ? "border-transparent bg-red-500 text-white"
+                    : "border-[var(--tg-border)] bg-[var(--tg-bg)] text-[var(--tg-text)]",
+                  !voiceSupported && "opacity-50",
+                )}
+              >
+                {voiceListening ? "Stop listening" : "Start listening"}
+              </button>
+              <button
+                type="button"
+                onClick={applyVoiceToForm}
+                disabled={voiceListening || !finalTranscript.trim()}
+                className="min-h-[42px] rounded-lg border border-[var(--tg-border)] bg-[var(--tg-bg)] px-3 text-sm font-medium text-[var(--tg-text)] disabled:opacity-50"
+              >
+                Apply transcript
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  resetVoice();
+                  setVoiceInfo(null);
+                  setVoiceWarn(null);
+                }}
+                disabled={!finalTranscript && !interimTranscript}
+                className="min-h-[42px] rounded-lg border border-[var(--tg-border)] bg-[var(--tg-bg)] px-3 text-sm font-medium text-[var(--tg-text)] disabled:opacity-50"
+              >
+                Clear
+              </button>
+            </div>
+            {!voiceSupported ? (
+              <p className="mt-2 text-xs text-[var(--tg-hint)]">
+                Voice input is not available in this browser/webview.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-[var(--tg-hint)]">
+                Speak naturally, then apply. Example: create task prepare sprint
+                report by Friday high priority assign to @alex.
+              </p>
+            )}
+            {finalTranscript || interimTranscript ? (
+              <div className="mt-2 rounded-lg border border-[var(--tg-border)] bg-[var(--tg-bg)] px-2 py-1.5 text-xs text-[var(--tg-text)]">
+                {finalTranscript}
+                {interimTranscript ? (
+                  <span className="opacity-60"> {interimTranscript}</span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <div>
           <p className="mb-1 text-xs font-medium text-[var(--tg-hint)]">
