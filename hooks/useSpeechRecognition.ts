@@ -56,6 +56,7 @@ function toErrorMessage(code?: string): string {
 export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: string) => void) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const finalTranscriptRef = useRef("");
+  const lastInterimRef = useRef("");
   const onStopRef = useRef(onStop);
   onStopRef.current = onStop;
   const [isListening, setIsListening] = useState(false);
@@ -66,6 +67,7 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
 
   const reset = useCallback(() => {
     finalTranscriptRef.current = "";
+    lastInterimRef.current = "";
     setFinalTranscript("");
     setInterimTranscript("");
     setError(null);
@@ -85,9 +87,11 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
       const text = result[0]?.transcript ?? "";
       if (result.isFinal) {
         finalTranscriptRef.current = text.trim();
+        lastInterimRef.current = "";
         setFinalTranscript(finalTranscriptRef.current);
         setInterimTranscript("");
       } else {
+        lastInterimRef.current = text.trim();
         setInterimTranscript(text.trim());
       }
     };
@@ -95,9 +99,15 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
       setError(toErrorMessage(event.error));
     };
     recognition.onend = () => {
+      // Some browsers never deliver a final onresult — fall back to last interim.
+      const best = finalTranscriptRef.current || lastInterimRef.current;
+      if (!finalTranscriptRef.current && lastInterimRef.current) {
+        finalTranscriptRef.current = lastInterimRef.current;
+        setFinalTranscript(finalTranscriptRef.current);
+      }
       setIsListening(false);
       setInterimTranscript("");
-      onStopRef.current?.(finalTranscriptRef.current);
+      onStopRef.current?.(best);
     };
     return recognition;
   }, []);
@@ -116,6 +126,7 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
 
     // Reset transcript state for the new session.
     finalTranscriptRef.current = "";
+    lastInterimRef.current = "";
     setFinalTranscript("");
     setInterimTranscript("");
     setError(null);
