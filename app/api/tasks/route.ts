@@ -36,6 +36,7 @@ function serializeTaskLean(t: {
   assigneeId?: unknown;
   assignedById: unknown;
   departmentPath: string;
+  startDate?: Date;
   dueDate?: Date;
   estimatedHours?: number;
   steps?: unknown[];
@@ -256,6 +257,7 @@ export const POST = withAuth(async (req, user) => {
     priority?: unknown;
     assigneeId?: unknown;
     departmentPath?: unknown;
+    startDate?: unknown;
     dueDate?: unknown;
     estimatedHours?: unknown;
     tags?: unknown;
@@ -285,6 +287,15 @@ export const POST = withAuth(async (req, user) => {
       return apiError("Invalid assigneeId", 400);
     }
     assignee = new Types.ObjectId(body.assigneeId);
+  }
+
+  let startDate: Date | undefined;
+  if (body.startDate !== undefined && body.startDate !== null && body.startDate !== "") {
+    const d = new Date(body.startDate as string);
+    if (Number.isNaN(d.getTime())) {
+      return apiError("Invalid startDate", 400);
+    }
+    startDate = d;
   }
 
   let dueDate: Date | undefined;
@@ -323,6 +334,7 @@ export const POST = withAuth(async (req, user) => {
     assigneeId: assignee,
     assignedById: new Types.ObjectId(user._id),
     departmentPath: body.departmentPath.trim(),
+    startDate,
     dueDate,
     estimatedHours,
     tags,

@@ -80,6 +80,7 @@ export function CreateTaskSheet({
   const [status, setStatus] = useState<TaskStatus>("todo");
   const [assigneeId, setAssigneeId] = useState("");
   const [departmentPath, setDepartmentPath] = useState("");
+  const [startStr, setStartStr] = useState("");
   const [dueStr, setDueStr] = useState("");
   const [userQuery, setUserQuery] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -96,6 +97,7 @@ export function CreateTaskSheet({
       setStatus(editTask.status);
       setAssigneeId(editTask.assigneeId || "");
       setDepartmentPath(editTask.departmentPath);
+      setStartStr(toInputDate(editTask.startDate));
       setDueStr(toInputDate(editTask.dueDate));
     } else if (user) {
       setTitle("");
@@ -104,6 +106,7 @@ export function CreateTaskSheet({
       setStatus("todo");
       setAssigneeId(user._id);
       setDepartmentPath(user.departmentPath || "");
+      setStartStr("");
       setDueStr("");
     }
     setUserQuery("");
@@ -212,6 +215,11 @@ export function CreateTaskSheet({
           status,
           assigneeId: assigneeId || null,
         };
+        if (startStr) {
+          body.startDate = new Date(startStr + "T12:00:00").toISOString();
+        } else {
+          body.startDate = null;
+        }
         if (dueStr) {
           body.dueDate = new Date(dueStr + "T12:00:00").toISOString();
         } else {
@@ -243,6 +251,9 @@ export function CreateTaskSheet({
         description: description || undefined,
       };
       if (assigneeId) body.assigneeId = assigneeId;
+      if (startStr) {
+        body.startDate = new Date(startStr + "T12:00:00").toISOString();
+      }
       if (dueStr) {
         body.dueDate = new Date(dueStr + "T12:00:00").toISOString();
       }
@@ -281,6 +292,7 @@ export function CreateTaskSheet({
     status,
     assigneeId,
     departmentPath,
+    startStr,
     dueStr,
     isEdit,
     editTask,
@@ -477,7 +489,17 @@ export function CreateTaskSheet({
         </div>
 
         <label className="block text-xs font-medium text-[var(--tg-hint)]">
-          Due date
+          Start date
+          <input
+            type="date"
+            value={startStr}
+            onChange={(e) => setStartStr(e.target.value)}
+            className="tf-input mt-1 min-h-[44px] px-2 text-sm"
+          />
+        </label>
+
+        <label className="block text-xs font-medium text-[var(--tg-hint)]">
+          End date
           <input
             type="date"
             value={dueStr}
@@ -496,9 +518,14 @@ export function CreateTaskSheet({
           />
         </label>
 
-        {submitting ? (
-          <p className="text-center text-xs text-[var(--tg-hint)]">Saving…</p>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => void submit()}
+          disabled={submitting}
+          className="tf-btn-primary flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold disabled:opacity-50"
+        >
+          {submitting ? "Saving…" : isEdit ? "Save task" : "Create task"}
+        </button>
       </div>
     </BottomSheet>
   );

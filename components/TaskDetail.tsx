@@ -13,6 +13,7 @@ import {
   Pencil,
   Send,
   Check,
+  ArrowRight,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,6 +45,7 @@ export type TaskDetailModel = {
   assignee?: PopUser;
   assignedBy?: PopUser;
   departmentPath: string;
+  startDate?: string;
   dueDate?: string;
   steps: IStep[];
   tags: string[];
@@ -87,6 +89,7 @@ function toITask(t: TaskDetailModel): ITask {
     assigneeId: t.assigneeId ?? "",
     assignedById: t.assignedById ?? "",
     departmentPath: t.departmentPath,
+    startDate: t.startDate,
     dueDate: t.dueDate,
     estimatedHours: undefined,
     steps: t.steps,
@@ -239,10 +242,11 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       : { _id: "none", name: "Unassigned" };
 
   const isOverdue = task.dueDate && task.status !== "done" && dayjs(task.dueDate).isBefore(dayjs().startOf("day"));
+  const hasStartDate = !!task.startDate;
 
   return (
     <div className={clsx(
-      "tf-page min-h-screen pb-32 text-[var(--tg-text)]",
+      "tf-page min-h-screen pb-8 text-[var(--tg-text)]",
     )}>
       {/* Header */}
       <header className={clsx(
@@ -302,6 +306,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       <div className="space-y-5 px-4 py-4">
         {/* Metadata card */}
         <div className="grid grid-cols-2 gap-2">
+          {/* Assignee */}
           <div className="tf-card flex items-center gap-2.5 p-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--tg-bg)]">
               <User className="h-4 w-4 text-[var(--tg-hint)]" />
@@ -315,7 +320,28 @@ export function TaskDetail({ taskId }: { taskId: string }) {
             </div>
           </div>
 
+          {/* Assigned by */}
           <div className="tf-card flex items-center gap-2.5 p-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--tg-bg)]">
+              <User className="h-4 w-4 text-[var(--tg-hint)]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">Assigned by</p>
+              <div className="flex items-center gap-1.5">
+                {task.assignedBy ? (
+                  <>
+                    <Avatar user={{ _id: task.assignedBy._id, name: task.assignedBy.name ?? "?", username: task.assignedBy.username, avatarUrl: task.assignedBy.avatarUrl }} size="sm" />
+                    <p className="truncate text-xs font-medium">{task.assignedBy.name ?? "?"}</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-[var(--tg-hint)]">Unknown</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Time range */}
+          <div className={clsx("tf-card flex items-center gap-2.5 p-3", isOverdue && "border border-rose-400/40")}>
             <div className={clsx(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
               isOverdue ? "bg-rose-500/15" : "bg-[var(--tg-bg)]",
@@ -323,15 +349,35 @@ export function TaskDetail({ taskId }: { taskId: string }) {
               <Calendar className={clsx("h-4 w-4", isOverdue ? "text-[var(--tone-danger)]" : "text-[var(--tg-hint)]")} />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">Due date</p>
-              <p className={clsx("text-xs font-medium", isOverdue ? "text-[var(--tone-danger)]" : "")}>
-                {task.dueDate ? dayjs(task.dueDate).format("MMM D, YYYY") : "Not set"}
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">
+                {isOverdue ? "Overdue" : "Timeline"}
               </p>
-              {isOverdue ? <p className="text-[10px] text-rose-400">Overdue</p> : null}
+              {task.startDate && task.dueDate ? (
+                <div className="flex items-center gap-1">
+                  <span className={clsx("text-xs font-medium", isOverdue ? "text-[var(--tone-danger)]" : "")}>
+                    {dayjs(task.startDate).format("MMM D")}
+                  </span>
+                  <ArrowRight className="h-3 w-3 shrink-0 text-[var(--tg-hint)]" />
+                  <span className={clsx("text-xs font-medium", isOverdue ? "text-[var(--tone-danger)]" : "")}>
+                    {dayjs(task.dueDate).format("MMM D")}
+                  </span>
+                </div>
+              ) : task.dueDate ? (
+                <p className={clsx("text-xs font-medium", isOverdue ? "text-[var(--tone-danger)]" : "")}>
+                  Due {dayjs(task.dueDate).format("MMM D, YYYY")}
+                </p>
+              ) : task.startDate ? (
+                <p className="text-xs font-medium">
+                  From {dayjs(task.startDate).format("MMM D, YYYY")}
+                </p>
+              ) : (
+                <p className="text-xs text-[var(--tg-hint)]">No dates set</p>
+              )}
             </div>
           </div>
 
-          <div className="tf-card col-span-2 flex items-center gap-2.5 p-3">
+          {/* Department */}
+          <div className="tf-card flex items-center gap-2.5 p-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--tg-bg)]">
               <Building2 className="h-4 w-4 text-[var(--tg-hint)]" />
             </div>
@@ -340,6 +386,23 @@ export function TaskDetail({ taskId }: { taskId: string }) {
               <p className="truncate text-xs font-medium">{task.departmentPath}</p>
             </div>
           </div>
+
+          {/* Mark as done */}
+          {canChangeStatus && task.status !== "done" ? (
+            <button
+              type="button"
+              onClick={() => { haptic("success"); void updateTaskStatus("done"); }}
+              className="tf-card col-span-2 flex items-center justify-center gap-2 rounded-2xl p-3 font-semibold text-[var(--tone-success)] transition active:scale-[0.97]"
+            >
+              <Check className="h-5 w-5" strokeWidth={2.5} />
+              <span className="text-sm">Mark as done</span>
+            </button>
+          ) : task.status === "done" ? (
+            <div className="tf-card col-span-2 flex items-center justify-center gap-2 rounded-2xl p-3">
+              <Check className="h-5 w-5 text-[var(--tone-success)]" strokeWidth={2.5} />
+              <span className="text-sm font-semibold text-[var(--tone-success)]">Completed</span>
+            </div>
+          ) : null}
         </div>
 
         {/* Description */}
@@ -446,22 +509,6 @@ export function TaskDetail({ taskId }: { taskId: string }) {
         />
       ) : null}
 
-      {/* Sticky action bar */}
-      {canChangeStatus && task.status !== "done" ? (
-        <div
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--tg-divider)] bg-[var(--tg-bg)]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur"
-          style={{ boxShadow: "var(--shadow-lg)" }}
-        >
-          <button
-            type="button"
-            onClick={() => { haptic("success"); void updateTaskStatus("done"); }}
-            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[var(--tone-success)] text-sm font-semibold text-white shadow-[var(--shadow-md)] transition active:scale-[0.985]"
-          >
-            <Check className="h-5 w-5" strokeWidth={3} />
-            Mark as done
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }

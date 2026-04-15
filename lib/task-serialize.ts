@@ -16,6 +16,7 @@ type LeanTaskDoc = {
   assigneeId?: unknown;
   assignedById: unknown;
   departmentPath: string;
+  startDate?: Date;
   dueDate?: Date;
   estimatedHours?: number;
   steps?: LeanStep[];
@@ -34,6 +35,7 @@ export function leanToITask(doc: LeanTaskDoc): ITask {
     assigneeId: doc.assigneeId ? String(doc.assigneeId) : "",
     assignedById: String(doc.assignedById),
     departmentPath: doc.departmentPath,
+    startDate: doc.startDate,
     dueDate: doc.dueDate,
     estimatedHours: doc.estimatedHours,
     steps: (doc.steps ?? []).map((s) => ({

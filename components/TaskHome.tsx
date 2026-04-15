@@ -1,6 +1,44 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+function useTypewriter(text: string, typeSpeed = 80, deleteSpeed = 40, pauseMs = 1500) {
+  const [displayed, setDisplayed] = useState("");
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (!text) { setDisplayed(""); setDone(false); return; }
+    let cancelled = false;
+    let timerId: ReturnType<typeof setTimeout>;
+
+    const run = (i: number, deleting: boolean) => {
+      if (cancelled) return;
+      if (!deleting) {
+        const next = i + 1;
+        setDisplayed(text.slice(0, next));
+        if (next >= text.length) {
+          setDone(true);
+          timerId = setTimeout(() => { setDone(false); run(next, true); }, pauseMs);
+        } else {
+          timerId = setTimeout(() => run(next, false), typeSpeed);
+        }
+      } else {
+        const next = i - 1;
+        setDisplayed(text.slice(0, next));
+        if (next <= 0) {
+          timerId = setTimeout(() => run(0, false), typeSpeed);
+        } else {
+          timerId = setTimeout(() => run(next, true), deleteSpeed);
+        }
+      }
+    };
+
+    setDisplayed("");
+    setDone(false);
+    timerId = setTimeout(() => run(0, false), typeSpeed);
+    return () => { cancelled = true; clearTimeout(timerId); };
+  }, [text, typeSpeed, deleteSpeed, pauseMs]);
+  return { displayed, done };
+}
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import {
@@ -66,6 +104,9 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   const showTeamTab = user ? hasRole(user.role, "manager") : false;
   const showAllTab = user?.role === "admin" || user?.role === "department_head";
   const showDeptFilter = user ? hasRole(user.role, "manager") : false;
+
+  const firstName = user?.name.trim().split(/\s+/).filter(Boolean)[0] ?? "there";
+  const { displayed: typedName, done: typingDone } = useTypewriter(firstName);
 
   const activeFilterCount =
     (status ? 1 : 0) + (dueFilter ? 1 : 0) + (deptFilter ? 1 : 0);
@@ -205,8 +246,6 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   }
 
   const canCreate = hasRole(user.role, "manager");
-  const firstName =
-    user.name.trim().split(/\s+/).filter(Boolean)[0] ?? "there";
   const workspaceLabel =
     tab === "my" ? "My workspace" : tab === "team" ? "Team queue" : "Full scope";
   const today = dayjs().startOf("day");
@@ -226,7 +265,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
               {workspaceLabel}
             </p>
             <h1 className="mt-1 truncate text-2xl font-semibold leading-tight">
-              Hi, <span className="tf-brand-text">{firstName}</span>
+              Hi, <span className="tf-brand-text">{typedName}{!typingDone && <span className="animate-pulse font-thin">|</span>}</span>
             </h1>
             <p className="mt-1 text-xs text-[var(--tg-hint)]">
               {total} task{total !== 1 ? "s" : ""} in this view

@@ -12,6 +12,7 @@ const TaskSchema = new Schema(
     assigneeId: { type: Schema.Types.ObjectId, ref: "User" },
     assignedById: { type: Schema.Types.ObjectId, ref: "User", required: true },
     departmentPath: { type: String, required: true },
+    startDate: Date,
     dueDate: Date,
     estimatedHours: Number,
     steps: [

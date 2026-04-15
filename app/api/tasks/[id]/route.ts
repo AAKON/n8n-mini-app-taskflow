@@ -147,6 +147,17 @@ export const PATCH = withAuth(async (req, user, ctx) => {
     }
     $set.priority = body.priority;
   }
+  if (body.startDate !== undefined) {
+    if (body.startDate === null || body.startDate === "") {
+      $set.startDate = null;
+    } else {
+      const d = new Date(String(body.startDate));
+      if (Number.isNaN(d.getTime())) {
+        return apiError("Invalid startDate", 400);
+      }
+      $set.startDate = d;
+    }
+  }
   if (body.dueDate !== undefined) {
     if (body.dueDate === null || body.dueDate === "") {
       $set.dueDate = null;

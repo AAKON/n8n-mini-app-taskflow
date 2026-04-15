@@ -42,6 +42,7 @@ export interface ITask {
   assigneeId: string;
   assignedById: string;
   departmentPath: string;
+  startDate?: Date | string;
   dueDate?: Date | string;
   estimatedHours?: number;
   steps: IStep[];
