@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import dayjs from "dayjs";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { MonthYearNav } from "@/components/ui/MonthYearNav";
 import { useAuth } from "@/hooks/useAuth";
 import { SignInNotice } from "@/components/SignInNotice";
 import { Spinner } from "@/components/ui/Spinner";
@@ -74,22 +74,8 @@ export default function CalendarPage() {
 
   return (
     <div className="tf-page min-h-screen pb-24 pt-4 text-[var(--tg-text)]">
-      <div className="mb-3 flex items-center justify-between px-4">
-        <button
-          type="button"
-          onClick={() => { haptic("light"); setMonth(month.subtract(1, "month")); }}
-          className="tf-icon-btn flex h-9 w-9 items-center justify-center rounded-full"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <h1 className="text-base font-semibold">{month.format("MMMM YYYY")}</h1>
-        <button
-          type="button"
-          onClick={() => { haptic("light"); setMonth(month.add(1, "month")); }}
-          className="tf-icon-btn flex h-9 w-9 items-center justify-center rounded-full"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
+      <div className="mb-3 px-2">
+        <MonthYearNav value={month} onChange={(m) => { haptic("light"); setMonth(m); }} />
       </div>
 
       <div className="grid grid-cols-7 gap-1 px-2 pb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--tg-hint)]">
@@ -117,8 +103,9 @@ export default function CalendarPage() {
                   "aspect-square rounded-xl border p-1 text-left transition",
                   isSelected
                     ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
-                    : "border-[var(--tg-border)] bg-[var(--tg-card-bg)] shadow-[var(--shadow-sm)]",
-                  isToday && !isSelected && "ring-1 ring-[var(--tg-button)]",
+                    : isToday
+                      ? "border-[var(--tg-button)] border-2 bg-[var(--tg-card-bg)] shadow-[var(--shadow-sm)]"
+                      : "border-[var(--tg-border)] bg-[var(--tg-card-bg)] shadow-[var(--shadow-sm)]",
                 )}
               >
                 <div className="text-[11px] font-semibold">{cell.date()}</div>

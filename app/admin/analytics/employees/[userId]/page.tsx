@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MonthYearNav } from "@/components/ui/MonthYearNav";
 import { useParams, useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import {
@@ -286,9 +287,10 @@ function MonthHeatmap({
   tasks: TaskListTask[];
   onTaskClick: (id: string) => void;
 }) {
+  const [viewMonth, setViewMonth] = useState(() => dayjs().startOf("month"));
   const today = dayjs();
-  const startOfMonth = today.startOf("month");
-  const daysInMonth = today.daysInMonth();
+  const startOfMonth = viewMonth;
+  const daysInMonth = viewMonth.daysInMonth();
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const counts: Record<number, { open: number; done: number }> = {};
@@ -297,7 +299,7 @@ function MonthHeatmap({
   for (const task of tasks) {
     if (!task.dueDate) continue;
     const d = dayjs(task.dueDate);
-    if (d.year() !== today.year() || d.month() !== today.month()) continue;
+    if (d.year() !== viewMonth.year() || d.month() !== viewMonth.month()) continue;
     const day = d.date();
     if (task.status === "done") counts[day]!.done++;
     else counts[day]!.open++;
@@ -329,8 +331,8 @@ function MonthHeatmap({
         if (!t.dueDate) return false;
         const d = dayjs(t.dueDate);
         return (
-          d.year() === today.year() &&
-          d.month() === today.month() &&
+          d.year() === viewMonth.year() &&
+          d.month() === viewMonth.month() &&
           d.date() === selectedDay
         );
       })
@@ -338,9 +340,11 @@ function MonthHeatmap({
 
   return (
     <section className="tf-card tf-animate-fade-up p-4" style={{ animationDelay: "40ms" }}>
-      <p className="mb-3 text-xs font-semibold text-[var(--tg-hint)]">
-        {today.format("MMMM YYYY")} · Due date heatmap
-      </p>
+      <p className="mb-2 text-xs font-semibold text-[var(--tg-hint)]">Due date heatmap</p>
+      <MonthYearNav
+        value={viewMonth}
+        onChange={(m) => { setViewMonth(m); setSelectedDay(null); }}
+      />
       <div className="grid grid-cols-7 gap-1">
         {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
           <div key={d} className="pb-1 text-center text-[9px] font-semibold text-[var(--tg-hint)]">{d}</div>
@@ -356,7 +360,7 @@ function MonthHeatmap({
               className={clsx(
                 "flex h-7 w-full items-center justify-center rounded-md text-[10px] font-semibold transition-transform active:scale-90",
                 cellColor[intensity(day)],
-                day === today.date() && "ring-2 ring-[var(--tg-button)] ring-offset-1",
+                day === today.date() && viewMonth.isSame(today, "month") && "ring-2 ring-[var(--tg-button)] ring-offset-1",
                 selectedDay === day && "scale-110 shadow-md ring-2 ring-[var(--tg-button)]",
               )}
             >
@@ -376,7 +380,7 @@ function MonthHeatmap({
       {selectedDay !== null && (
         <div className="mt-4 border-t border-[var(--tg-divider)] pt-4">
           <p className="mb-2 text-xs font-semibold text-[var(--tg-hint)]">
-            {today.format("MMMM")} {selectedDay} · {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
+            {viewMonth.format("MMMM")} {selectedDay} · {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
           </p>
           {dayTasks.length === 0 ? (
             <p className="text-xs italic text-[var(--tg-hint)]">No tasks due on this day.</p>
