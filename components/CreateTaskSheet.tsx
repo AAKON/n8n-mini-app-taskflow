@@ -482,7 +482,7 @@ export function CreateTaskSheet({
               </p>
             ) : (
               <p className="mt-2 text-xs text-[var(--tg-hint)]">
-                Speak naturally — form fills automatically when you stop. Example: prepare sprint report by Friday high priority assign to @alex.
+                Speak, then pause — form fills automatically. Example: prepare sprint report by Friday high priority assign to @alex.
               </p>
             )}
             {finalTranscript || interimTranscript ? (

@@ -73,26 +73,23 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
 
   const createRecognition = useCallback((Ctor: SpeechConstructor) => {
     const recognition = new Ctor();
-    recognition.continuous = true;
+    // Non-continuous: one clean result per session, no cross-result accumulation.
+    // Auto-stops on natural pause which also auto-applies the form.
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.onresult = (event) => {
-      // Rebuild from full results list every time — avoids duplication caused
-      // by browsers that incorrectly send resultIndex=0 on every event.
-      let fullFinal = "";
-      let currentInterim = "";
-      for (let i = 0; i < event.results.length; i += 1) {
-        const result = event.results[i];
-        const text = result[0]?.transcript ?? "";
-        if (!text) continue;
-        if (result.isFinal) {
-          fullFinal += `${text} `;
-        } else {
-          currentInterim += text;
-        }
+      // With continuous=false there is only one result slot (index 0).
+      // It starts as interim and becomes final when recognition ends.
+      const result = event.results[0];
+      if (!result) return;
+      const text = result[0]?.transcript ?? "";
+      if (result.isFinal) {
+        finalTranscriptRef.current = text.trim();
+        setFinalTranscript(finalTranscriptRef.current);
+        setInterimTranscript("");
+      } else {
+        setInterimTranscript(text.trim());
       }
-      finalTranscriptRef.current = fullFinal.trim();
-      setFinalTranscript(finalTranscriptRef.current);
-      setInterimTranscript(currentInterim.trim());
     };
     recognition.onerror = (event) => {
       setError(toErrorMessage(event.error));
