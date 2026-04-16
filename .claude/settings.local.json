@@ -6,7 +6,8 @@
       "Bash(curl:*)",
       "Bash(npx tsc:*)",
       "Bash(./node_modules/.bin/tsc --noEmit)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(xargs grep *)"
     ]
   }
 }

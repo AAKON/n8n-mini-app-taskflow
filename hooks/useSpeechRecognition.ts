@@ -32,6 +32,26 @@ type SpeechConstructor = new () => SpeechRecognitionLike;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// Module-level singleton — survives hook mount/unmount within same page session.
+// Prevents repeated mic permission prompts in Telegram WebView.
+let _sharedMicStream: MediaStream | null = null;
+
+async function getSharedMicStream(): Promise<MediaStream | null> {
+  // Reuse if at least one track is still live (don't rely on .active — it goes
+  // false as soon as any track is stopped, even if permission is still granted).
+  if (_sharedMicStream && _sharedMicStream.getTracks().some((t) => t.readyState === "live")) {
+    return _sharedMicStream;
+  }
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return null;
+  try {
+    _sharedMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    return _sharedMicStream;
+  } catch {
+    _sharedMicStream = null;
+    return null;
+  }
+}
+
 function getSpeechConstructor(): SpeechConstructor | null {
   if (typeof window === "undefined") return null;
   const w = window as Window & {
@@ -188,10 +208,8 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
     setFinalTranscript("");
     setInterimTranscript("");
 
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
+    const stream = await getSharedMicStream();
+    if (!stream) {
       setError("Microphone permission was denied.");
       return;
     }
@@ -205,8 +223,9 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
     };
 
     recorder.onstop = async () => {
-      // Stop all tracks to release mic indicator.
-      stream.getTracks().forEach((t) => t.stop());
+      // Do NOT stop stream tracks here — stopping them makes the stream inactive,
+      // which causes re-prompts on next recording in Telegram WebView.
+      // Tracks are stopped in the cleanup useEffect on unmount instead.
 
       const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
       audioChunksRef.current = [];
@@ -277,6 +296,11 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== "inactive") {
         recorder.stop();
+      }
+      // Stop shared mic tracks on unmount so the mic indicator clears.
+      if (_sharedMicStream) {
+        _sharedMicStream.getTracks().forEach((t) => t.stop());
+        _sharedMicStream = null;
       }
     };
   }, []);

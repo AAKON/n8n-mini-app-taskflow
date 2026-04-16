@@ -20,10 +20,6 @@ import {
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { TaskListTask } from "@/components/TaskCard";
 import type { ITask, TaskPriority, TaskStatus } from "@/types";
-import {
-  parseVoiceTaskTranscript,
-  resolveVoiceAssignee,
-} from "@/lib/voice-task-parser";
 
 type DeptRow = {
   _id: string;
@@ -87,27 +83,27 @@ export function CreateTaskSheet({
   const [departmentPath, setDepartmentPath] = useState("");
   const [startStr, setStartStr] = useState("");
   const [dueStr, setDueStr] = useState("");
+  const [steps, setSteps] = useState<string[]>([]);
+  const [stepInput, setStepInput] = useState("");
   const [userQuery, setUserQuery] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
   const [departments, setDepartments] = useState<DeptRow[]>([]);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [submitErr, setSubmitErr] = useState<string | null>(null);
-  const [voiceInfo, setVoiceInfo] = useState<string | null>(null);
-  const [voiceWarn, setVoiceWarn] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiWarn, setAiWarn] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // Forwarding ref so the onStop callback always calls the latest applyVoiceToForm.
-  const applyVoiceRef = useRef<((transcript: string) => void) | undefined>(undefined);
+  const setAiPromptRef = useRef<((t: string) => void) | undefined>(undefined);
   const {
     isSupported: voiceSupported,
     isListening: voiceListening,
-    finalTranscript,
     interimTranscript,
     error: voiceErr,
     start: startVoice,
     stop: stopVoice,
-    reset: resetVoice,
   } = useSpeechRecognition("en-US", (transcript) => {
-    applyVoiceRef.current?.(transcript);
+    if (transcript.trim()) setAiPromptRef.current?.(transcript.trim());
   });
 
   const resetFromProps = useCallback(() => {
@@ -130,13 +126,14 @@ export function CreateTaskSheet({
       setStartStr("");
       setDueStr("");
     }
+    setSteps([]);
+    setStepInput("");
+    setAiPrompt("");
+    setAiWarn(null);
     setUserQuery("");
     setLoadErr(null);
     setSubmitErr(null);
-    setVoiceInfo(null);
-    setVoiceWarn(null);
-    resetVoice();
-  }, [editTask, resetVoice, user]);
+  }, [editTask, user]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -218,59 +215,69 @@ export function CreateTaskSheet({
     );
   }, [users, userQuery, departmentPath]);
 
-  const applyVoiceToForm = useCallback((transcriptArg?: string) => {
-    const transcript = (transcriptArg ?? finalTranscript).trim();
-    if (!transcript) {
-      setVoiceWarn("No voice transcript to apply yet.");
-      return;
-    }
+  type AiResult = {
+    title: string;
+    description: string | null;
+    priority: "low" | "medium" | "high" | "urgent";
+    dueDate: string | null;
+    assigneeId: string | null;
+    steps: string[];
+    warnings: string[];
+  };
 
-    const parsed = parseVoiceTaskTranscript(transcript);
-    const warnings = [...parsed.warnings];
-    const applied: string[] = [];
+  const applyAiResult = useCallback((result: AiResult) => {
+    if (result.title)       setTitle(result.title);
+    if (result.description) setDescription(result.description);
+    if (result.priority)    setPriority(result.priority);
+    if (result.dueDate)     setDueStr(result.dueDate);
+    if (result.assigneeId) {
+      setAssigneeId(result.assigneeId);
+      const matched = users.find((u) => u._id === result.assigneeId);
+      if (matched) setUserQuery(matched.name);
+    }
+    if (result.steps?.length) setSteps(result.steps);
+    setAiWarn(result.warnings?.length ? result.warnings.join(" ") : null);
+  }, [users]);
 
-    if (parsed.title) {
-      setTitle(parsed.title);
-      applied.push("title");
-    }
-    if (parsed.description) {
-      setDescription(parsed.description);
-      applied.push("description");
-    }
-    if (parsed.priority) {
-      setPriority(parsed.priority);
-      applied.push("priority");
-    }
-    if (parsed.dueDate) {
-      setDueStr(dayjs(parsed.dueDate).format("YYYY-MM-DD"));
-      applied.push("due date");
-    }
-
-    if (parsed.assigneeHint) {
-      const match = resolveVoiceAssignee({
-        assigneeHint: parsed.assigneeHint,
-        users,
-        departmentPath,
+  const parseWithAi = useCallback(async () => {
+    if (!aiPrompt.trim() || !token) return;
+    setAiLoading(true);
+    setAiWarn(null);
+    try {
+      const res = await fetch("/api/tasks/ai-parse", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: aiPrompt.trim(),
+          users: users.map((u) => ({
+            _id: u._id,
+            name: u.name,
+            username: u.username,
+            role: u.role,
+            departmentPath: u.departmentPath,
+          })),
+          departmentPath,
+          today: dayjs().format("YYYY-MM-DD"),
+        }),
       });
-      if (match.user) {
-        setAssigneeId(match.user._id);
-        setUserQuery(match.user.name);
-        applied.push("assignee");
-      } else if (match.warning) {
-        warnings.push(match.warning);
+      const json = (await res.json()) as { success?: boolean; data?: AiResult; error?: string };
+      if (!res.ok || json.success === false || !json.data) {
+        setAiWarn(json.error ?? "AI parse failed.");
+      } else {
+        applyAiResult(json.data);
       }
+    } catch {
+      setAiWarn("AI request failed. Try again.");
+    } finally {
+      setAiLoading(false);
     }
+  }, [aiPrompt, token, users, departmentPath, applyAiResult]);
 
-    if (applied.length > 0) {
-      setVoiceInfo(`Applied: ${applied.join(", ")}.`);
-    } else {
-      setVoiceInfo(null);
-    }
-    setVoiceWarn(warnings.length > 0 ? warnings.join(" ") : null);
-  }, [departmentPath, finalTranscript, users]);
-
-  // Keep forwarding ref up to date so onStop always uses fresh callback.
-  applyVoiceRef.current = applyVoiceToForm;
+  // Keep ref in sync so the voice onStop callback always reaches latest setter.
+  setAiPromptRef.current = (t: string) => setAiPrompt(t);
 
   const submit = useCallback(async () => {
     if (!token) return;
@@ -324,6 +331,7 @@ export function CreateTaskSheet({
         departmentPath: resolvedDept,
         priority,
         description: description || undefined,
+        steps: steps.map((t) => ({ title: t })),
       };
       if (assigneeId) body.assigneeId = assigneeId;
       if (startStr) {
@@ -370,6 +378,7 @@ export function CreateTaskSheet({
     departmentPath,
     startStr,
     dueStr,
+    steps,
     isEdit,
     editTask,
     onCreated,
@@ -408,15 +417,6 @@ export function CreateTaskSheet({
         {submitErr ? (
           <p className="text-xs text-red-500">{submitErr}</p>
         ) : null}
-        {voiceErr ? (
-          <p className="text-xs text-red-500">{voiceErr}</p>
-        ) : null}
-        {voiceWarn ? (
-          <p className="text-xs text-amber-600">{voiceWarn}</p>
-        ) : null}
-        {voiceInfo ? (
-          <p className="text-xs text-emerald-600">{voiceInfo}</p>
-        ) : null}
 
         <label className="block text-xs font-medium text-[var(--tg-hint)]">
           Title
@@ -429,70 +429,55 @@ export function CreateTaskSheet({
 
         {!isEdit ? (
           <div className="rounded-xl border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)]/60 p-3">
-            <p className="text-xs font-medium text-[var(--tg-hint)]">
-              Voice input (beta)
+            <p className="text-xs font-medium text-[var(--tg-hint)]">AI Assistant</p>
+            <p className="mt-0.5 text-xs text-[var(--tg-hint)]">
+              Describe the task — AI fills the form for you.
             </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setVoiceInfo(null);
-                  setVoiceWarn(null);
-                  if (voiceListening) {
-                    stopVoice();
-                  } else {
-                    startVoice();
-                  }
-                }}
-                disabled={!voiceSupported}
-                className={clsx(
-                  "min-h-[42px] rounded-lg border px-3 text-sm font-medium transition",
+            <div className="mt-2 flex gap-2">
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder={
                   voiceListening
-                    ? "border-transparent bg-red-500 text-white"
-                    : "border-[var(--tg-border)] bg-[var(--tg-bg)] text-[var(--tg-text)]",
-                  !voiceSupported && "opacity-50",
-                )}
-              >
-                {voiceListening ? "Stop & apply" : "Start listening"}
-              </button>
-              <button
-                type="button"
-                onClick={() => applyVoiceToForm()}
-                disabled={voiceListening || !finalTranscript.trim()}
-                className="min-h-[42px] rounded-lg border border-[var(--tg-border)] bg-[var(--tg-bg)] px-3 text-sm font-medium text-[var(--tg-text)] disabled:opacity-50"
-              >
-                Re-apply
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  resetVoice();
-                  setVoiceInfo(null);
-                  setVoiceWarn(null);
-                }}
-                disabled={!finalTranscript && !interimTranscript}
-                className="min-h-[42px] rounded-lg border border-[var(--tg-border)] bg-[var(--tg-bg)] px-3 text-sm font-medium text-[var(--tg-text)] disabled:opacity-50"
-              >
-                Clear
-              </button>
+                    ? interimTranscript || "Listening…"
+                    : "e.g. Fix login bug, assign to Alex, high priority, due Friday"
+                }
+                rows={3}
+                disabled={aiLoading}
+                className="tf-textarea flex-1 px-3 py-2 text-sm disabled:opacity-50"
+              />
+              {voiceSupported ? (
+                <button
+                  type="button"
+                  onClick={() => (voiceListening ? stopVoice() : startVoice())}
+                  disabled={aiLoading}
+                  title={voiceListening ? "Stop recording" : "Speak prompt"}
+                  className={clsx(
+                    "flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-lg border text-base transition",
+                    voiceListening
+                      ? "border-transparent bg-red-500 text-white"
+                      : "border-[var(--tg-border)] bg-[var(--tg-bg)] text-[var(--tg-text)]",
+                    aiLoading && "opacity-50",
+                  )}
+                >
+                  {voiceListening ? "⏹" : "🎤"}
+                </button>
+              ) : null}
             </div>
-            {!voiceSupported ? (
-              <p className="mt-2 text-xs text-[var(--tg-hint)]">
-                Voice input is not available in this browser/webview.
-              </p>
-            ) : (
-              <p className="mt-2 text-xs text-[var(--tg-hint)]">
-                Speak, then pause — form fills automatically. Example: prepare sprint report by Friday high priority assign to @alex.
-              </p>
-            )}
-            {finalTranscript || interimTranscript ? (
-              <div className="mt-2 rounded-lg border border-[var(--tg-border)] bg-[var(--tg-bg)] px-2 py-1.5 text-xs text-[var(--tg-text)]">
-                {finalTranscript}
-                {interimTranscript ? (
-                  <span className="opacity-60"> {interimTranscript}</span>
-                ) : null}
-              </div>
+            {voiceErr ? (
+              <p className="mt-1 text-xs text-red-500">{voiceErr}</p>
             ) : null}
+            {aiWarn ? (
+              <p className="mt-1 text-xs text-amber-600">{aiWarn}</p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void parseWithAi()}
+              disabled={!aiPrompt.trim() || aiLoading || voiceListening}
+              className="mt-2 min-h-[42px] w-full rounded-lg border border-transparent bg-[var(--tg-button)] px-3 text-sm font-medium text-[var(--tg-button-text)] disabled:opacity-50"
+            >
+              {aiLoading ? "Thinking…" : "Parse with AI"}
+            </button>
           </div>
         ) : null}
 
@@ -671,6 +656,61 @@ export function CreateTaskSheet({
             className="tf-textarea mt-1 px-3 py-2 text-sm"
           />
         </label>
+
+        {!isEdit ? (
+          <div>
+            <p className="mb-1 text-xs font-medium text-[var(--tg-hint)]">Steps</p>
+            <div className="flex gap-2">
+              <input
+                value={stepInput}
+                onChange={(e) => setStepInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const t = stepInput.trim();
+                    if (t) {
+                      setSteps((prev) => [...prev, t]);
+                      setStepInput("");
+                    }
+                  }
+                }}
+                placeholder="Step title…"
+                className="tf-input min-h-[44px] flex-1 px-3 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const t = stepInput.trim();
+                  if (!t) return;
+                  setSteps((prev) => [...prev, t]);
+                  setStepInput("");
+                }}
+                className="min-h-[44px] rounded-lg border border-[var(--tg-border)] bg-[var(--tg-bg)] px-3 text-sm font-medium text-[var(--tg-text)]"
+              >
+                Add
+              </button>
+            </div>
+            {steps.length > 0 ? (
+              <ul className="mt-2 space-y-1">
+                {steps.map((s, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center gap-2 rounded-lg border border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] px-3 py-2 text-sm"
+                  >
+                    <span className="flex-1 text-[var(--tg-text)]">{s}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSteps((prev) => prev.filter((_, j) => j !== i))}
+                      className="text-xs text-[var(--tg-hint)] hover:text-red-500"
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
 
         <button
           type="button"

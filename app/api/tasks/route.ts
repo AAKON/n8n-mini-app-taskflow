@@ -261,6 +261,7 @@ export const POST = withAuth(async (req, user) => {
     dueDate?: unknown;
     estimatedHours?: unknown;
     tags?: unknown;
+    steps?: unknown;
   };
 
   if (typeof body.title !== "string" || !body.title.trim()) {
@@ -324,6 +325,17 @@ export const POST = withAuth(async (req, user) => {
     tags = body.tags;
   }
 
+  let steps: { title: string }[] = [];
+  if (body.steps !== undefined) {
+    if (
+      !Array.isArray(body.steps) ||
+      !body.steps.every((s) => typeof s === "object" && s !== null && typeof (s as Record<string, unknown>).title === "string" && ((s as Record<string, unknown>).title as string).trim())
+    ) {
+      return apiError("steps must be an array of objects with a title string", 400);
+    }
+    steps = (body.steps as { title: string }[]).map((s) => ({ title: s.title.trim() }));
+  }
+
   const description =
     typeof body.description === "string" ? body.description : undefined;
 
@@ -338,6 +350,7 @@ export const POST = withAuth(async (req, user) => {
     dueDate,
     estimatedHours,
     tags,
+    steps,
   });
 
   await ActivityLog.create({
