@@ -55,6 +55,9 @@ function toErrorMessage(code?: string): string {
 
 export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: string) => void) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  // Holds an active MediaStream so Telegram/WebView keeps mic permission alive
+  // across recognition sessions without re-prompting.
+  const micStreamRef = useRef<MediaStream | null>(null);
   const finalTranscriptRef = useRef("");
   const lastInterimRef = useRef("");
   const onStopRef = useRef(onStop);
@@ -116,14 +119,31 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
     return recognition;
   }, []);
 
-  const start = useCallback(() => {
+  // Pre-acquire mic permission and keep the stream alive.
+  // Telegram WebView resets permissions between sessions unless an active
+  // MediaStream is held — this prevents the re-prompt on every click.
+  const acquireMicStream = useCallback(async () => {
+    if (micStreamRef.current) return; // already held
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
+    try {
+      micStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      // Permission denied or unavailable — SpeechRecognition will surface its own error.
+    }
+  }, []);
+
+  const start = useCallback(async () => {
     const Ctor = getSpeechConstructor();
     if (!Ctor) {
       setError("Voice input is not supported in this browser.");
       return;
     }
 
-    // Lazy-create instance once; reuse to avoid re-triggering mic permission.
+    // Acquire (or reuse) mic stream before starting recognition to avoid
+    // repeated permission prompts in Telegram WebView.
+    await acquireMicStream();
+
+    // Lazy-create instance; reuse to avoid re-triggering mic permission.
     if (!recognitionRef.current) {
       recognitionRef.current = createRecognition(Ctor);
     }
@@ -142,7 +162,7 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
       setIsListening(true);
     } catch {
       // Some mobile browsers refuse to restart a stopped instance.
-      // Recreate once and retry — this still reuses across most sessions.
+      // Recreate once and retry.
       try {
         recognitionRef.current = createRecognition(Ctor);
         recognitionRef.current.lang = lang;
@@ -153,7 +173,7 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
         setIsListening(false);
       }
     }
-  }, [lang, createRecognition]);
+  }, [lang, createRecognition, acquireMicStream]);
 
   const stop = useCallback(() => {
     const recognition = recognitionRef.current;
@@ -167,13 +187,20 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
 
   useEffect(() => {
     return () => {
+      // Stop recognition.
       const recognition = recognitionRef.current;
-      if (!recognition) return;
-      recognition.onresult = null;
-      recognition.onerror = null;
-      recognition.onend = null;
-      recognition.abort();
-      recognitionRef.current = null;
+      if (recognition) {
+        recognition.onresult = null;
+        recognition.onerror = null;
+        recognition.onend = null;
+        recognition.abort();
+        recognitionRef.current = null;
+      }
+      // Release mic stream on unmount.
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
+      }
     };
   }, []);
 
@@ -200,4 +227,3 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
     ],
   );
 }
-
