@@ -107,6 +107,10 @@ export function useSpeechRecognition(lang = "en-US", onStop?: (transcript: strin
       }
       setIsListening(false);
       setInterimTranscript("");
+      // Null the ref so next start() creates a fresh instance via the normal
+      // path instead of hitting the catch-and-recreate branch, which triggers
+      // mic permission prompts on some browsers (Safari, Firefox).
+      recognitionRef.current = null;
       onStopRef.current?.(best);
     };
     return recognition;
