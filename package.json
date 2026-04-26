@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 1001",
+    "dev": "next dev -p 10101",
     "build": "next build",
-    "start": "next start -p 1001",
+    "start": "next start -p 10101",
     "lint": "next lint",
     "seed": "tsx --env-file=.env.local scripts/seed.ts"
   },
