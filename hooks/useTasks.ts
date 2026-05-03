@@ -117,7 +117,6 @@ export function useTasks(filters: UseTasksFilters) {
     await fetchPage(page + 1, "append");
   }, [
     token,
-    filters.userId,
     isLoading,
     isLoadingMore,
     page,
