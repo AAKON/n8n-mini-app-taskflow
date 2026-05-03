@@ -100,7 +100,7 @@ export function useTasks(filters: UseTasksFilters) {
         setIsLoadingMore(false);
       }
     },
-    [token, filters.userId, buildUrl],
+    [token, buildUrl],
   );
 
   const refetch = useCallback(async () => {

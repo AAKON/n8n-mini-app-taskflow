@@ -105,7 +105,7 @@ export default function EmployeeDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, userId, user]);
+  }, [token, userId, user, canView]);
 
   if (!token || !user) return <SignInNotice />;
   if (!canView) {
