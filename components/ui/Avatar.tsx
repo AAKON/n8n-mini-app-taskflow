@@ -9,6 +9,7 @@ export type AvatarUser = {
 };
 
 const SIZES = {
+  xs: { box: "h-5 w-5 min-h-5 min-w-5 text-[9px]" },
   sm: { box: "h-8 w-8 min-h-8 min-w-8 text-xs" },
   md: { box: "h-10 w-10 min-h-10 min-w-10 text-sm" },
   lg: { box: "h-12 w-12 min-h-12 min-w-12 text-base" },

@@ -23,6 +23,21 @@ async function bootstrapAuth(
   const initData = getInitData();
 
   if (!initData.trim()) {
+    // if (process.env.NODE_ENV === "development") {
+    //   try {
+    //     const devRes = await fetch("/api/auth/dev", { method: "POST" });
+    //     const devJson = (await devRes.json().catch(() => ({}))) as {
+    //       token?: string;
+    //       user?: IUser;
+    //     };
+    //     if (devRes.ok && devJson.token && devJson.user) {
+    //       setAuth(devJson.token, devJson.user);
+    //       return;
+    //     }
+    //   } catch {
+    //     // fall through to clearAuth
+    //   }
+    // }
     clearAuth();
     return;
   }

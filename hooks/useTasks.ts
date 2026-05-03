@@ -6,14 +6,11 @@ import type { TaskListTask } from "@/components/TaskCard";
 import type { TaskStatus } from "@/types";
 import type { DueFilter } from "@/lib/task-filters";
 
-export type TaskTab = "my" | "team" | "all";
-
 export type UseTasksFilters = {
-  tab: TaskTab;
   status?: TaskStatus | "";
-  userId: string;
   dueFilter?: DueFilter;
   departmentPath?: string;
+  assigneeId?: string;
   q?: string;
 };
 
@@ -46,10 +43,8 @@ export function useTasks(filters: UseTasksFilters) {
       if (filters.status) {
         params.set("status", filters.status);
       }
-      if (filters.tab === "my") {
-        params.set("assigneeId", filters.userId);
-      } else if (filters.tab === "team") {
-        params.set("excludeAssigneeId", filters.userId);
+      if (filters.assigneeId) {
+        params.set("assigneeId", filters.assigneeId);
       }
       if (filters.dueFilter) {
         params.set("dueFilter", filters.dueFilter);
@@ -62,12 +57,12 @@ export function useTasks(filters: UseTasksFilters) {
       }
       return `/api/tasks?${params.toString()}`;
     },
-    [filters.tab, filters.status, filters.userId, filters.dueFilter, filters.departmentPath, filters.q],
+    [filters.status, filters.dueFilter, filters.departmentPath, filters.assigneeId, filters.q],
   );
 
   const fetchPage = useCallback(
     async (pageNum: number, mode: "replace" | "append") => {
-      if (!token || !filters.userId) return;
+      if (!token) return;
       const url = buildUrl(pageNum);
       if (mode === "replace") {
         setIsLoading(true);
@@ -117,7 +112,7 @@ export function useTasks(filters: UseTasksFilters) {
   }, []);
 
   const loadMore = useCallback(async () => {
-    if (!token || !filters.userId || isLoading || isLoadingMore) return;
+    if (!token || isLoading || isLoadingMore) return;
     if (page >= totalPages || totalPages === 0) return;
     await fetchPage(page + 1, "append");
   }, [
@@ -131,7 +126,7 @@ export function useTasks(filters: UseTasksFilters) {
   ]);
 
   useEffect(() => {
-    if (!token || !filters.userId) {
+    if (!token) {
       setTasks([]);
       setError(null);
       setIsLoading(false);
@@ -140,11 +135,10 @@ export function useTasks(filters: UseTasksFilters) {
     void fetchPage(1, "replace");
   }, [
     token,
-    filters.userId,
-    filters.tab,
     filters.status,
     filters.dueFilter,
     filters.departmentPath,
+    filters.assigneeId,
     filters.q,
     fetchPage,
   ]);
