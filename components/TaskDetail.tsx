@@ -111,6 +111,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentSending, setCommentSending] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<TaskStatus | null>(null);
 
   const canEdit = user ? hasRole(user.role, "manager") : false;
   const canEditSteps = canEdit || (!!user && !!task && user._id === task.assigneeId);
@@ -178,7 +179,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   const onStepsChange = useCallback((newSteps: IStep[]) => {
     setTask((prev) => (prev ? { ...prev, steps: newSteps } : null));
     const current = taskRef.current;
-    if (!current) return;
+    if (!current || current.status === "done") return;
     const allDone = newSteps.length > 0 && newSteps.every((s) => s.done);
     const anyDone = newSteps.some((s) => s.done);
     if (allDone && current.status !== "done" && current.status !== "review") {
@@ -281,11 +282,13 @@ export function TaskDetail({ taskId }: { taskId: string }) {
             const currentIdx = statuses.indexOf(task.status);
             const isActive = task.status === s.value;
             const isPast = statuses.indexOf(s.value) < currentIdx;
+            const locked = task.status === "done";
             return (
               <button
                 key={s.value}
                 type="button"
-                onClick={() => { if (!isActive) void updateTaskStatus(s.value); }}
+                disabled={locked || isActive}
+                onClick={() => { haptic("light"); setPendingStatus(s.value); }}
                 className={clsx(
                   "flex-1 rounded-xl border py-2 text-xs font-semibold transition-colors",
                   isActive
@@ -293,6 +296,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
                     : isPast
                       ? "border-transparent bg-[var(--tg-button)]/20 text-[var(--tg-button)]"
                       : "border-[var(--tg-border)] bg-[var(--tg-secondary-bg)] text-[var(--tg-hint)]",
+                  locked && !isActive && "cursor-not-allowed opacity-40",
                 )}
               >
                 {i + 1}. {s.label}
@@ -390,7 +394,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           {canChangeStatus && task.status !== "done" ? (
             <button
               type="button"
-              onClick={() => { haptic("success"); void updateTaskStatus("done"); }}
+              onClick={() => { haptic("light"); setPendingStatus("done"); }}
               className="tf-card col-span-2 flex items-center justify-center gap-2 rounded-2xl p-3 font-semibold text-[var(--tone-success)] transition active:scale-[0.97]"
             >
               <Check className="h-5 w-5" strokeWidth={2.5} />
@@ -506,6 +510,50 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           editTask={toITask(task)}
           onUpdated={() => { setEditSheetOpen(false); void loadTask(); }}
         />
+      ) : null}
+
+      {pendingStatus ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 px-4 pb-[env(safe-area-inset-bottom)]"
+          onClick={() => { haptic("light"); setPendingStatus(null); }}
+        >
+          <div
+            className="tf-card mb-4 w-full max-w-sm rounded-2xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-1 text-base font-semibold text-[var(--tg-text)]">
+              Change status?
+            </h3>
+            <p className="mb-5 text-sm text-[var(--tg-hint)]">
+              Move task to{" "}
+              <span className="font-semibold text-[var(--tg-text)]">
+                {STATUS_TABS.find((s) => s.value === pendingStatus)?.label}
+              </span>
+              ?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { haptic("light"); setPendingStatus(null); }}
+                className="tf-btn-secondary flex-1 min-h-[44px] rounded-xl text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const s = pendingStatus;
+                  setPendingStatus(null);
+                  haptic(s === "done" ? "success" : "light");
+                  void updateTaskStatus(s);
+                }}
+                className="tf-btn-primary flex-1 min-h-[44px] rounded-xl text-sm font-medium"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
     </div>

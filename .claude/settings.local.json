@@ -7,7 +7,9 @@
       "Bash(npx tsc:*)",
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(ls:*)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(Get-ChildItem -Path \"H:\\\\n8n-mini-app-taskflow\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

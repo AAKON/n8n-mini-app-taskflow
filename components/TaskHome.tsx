@@ -52,22 +52,22 @@ import {
   X,
 } from "lucide-react";
 import type { TaskListTask } from "@/components/TaskCard";
+import { Avatar } from "@/components/ui/Avatar";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { useAuth } from "@/hooks/useAuth";
-import { useTasks, type TaskTab } from "@/hooks/useTasks";
+import { useTasks } from "@/hooks/useTasks";
 import { TaskCard } from "@/components/TaskCard";
 import { CreateTaskSheet } from "@/components/CreateTaskSheet";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SignInNotice } from "@/components/SignInNotice";
-import { Spinner } from "@/components/ui/Spinner";
 import { TaskCardSkeleton } from "@/components/ui/TaskCardSkeleton";
 import { hasRole } from "@/lib/rbac";
 import { getTelegramWebApp, hideBackButton, haptic } from "@/lib/tma";
-import type { IDepartment, TaskStatus } from "@/types";
+import type { IDepartment, IUser, TaskStatus } from "@/types";
 import type { DueFilter } from "@/lib/task-filters";
 import clsx from "clsx";
 
 const STATUS_OPTIONS: { value: TaskStatus | ""; label: string }[] = [
-  { value: "", label: "All" },
   { value: "todo", label: "Todo" },
   { value: "in_progress", label: "In Progress" },
   { value: "review", label: "Review" },
@@ -81,39 +81,30 @@ const DUE_OPTIONS: { value: DueFilter; label: string }[] = [
   { value: "week", label: "This week" },
 ];
 
-export type TaskHomeProps = {
-  initialTab?: TaskTab;
-};
-
-export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
+export function TaskHome() {
   const router = useRouter();
   const { user, token } = useAuth();
-  const [tab, setTab] = useState<TaskTab>(initialTab);
-  const [status, setStatus] = useState<TaskStatus | "">("");
+  const [status, setStatus] = useState<TaskStatus | "">("todo");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [dueFilter, setDueFilter] = useState<DueFilter>(null);
   const [deptFilter, setDeptFilter] = useState("");
   const [departments, setDepartments] = useState<IDepartment[]>([]);
+  const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [teamMembers, setTeamMembers] = useState<Pick<IUser, "_id" | "name" | "username" | "avatarUrl">[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const loadSentinelRef = useRef<HTMLDivElement>(null);
   const pullRef = useRef({ startY: 0, tracking: false });
 
-  const showTeamTab = user ? hasRole(user.role, "manager") : false;
-  const showAllTab = user?.role === "admin" || user?.role === "department_head";
   const showDeptFilter = user ? hasRole(user.role, "manager") : false;
 
   const firstName = user?.name.trim().split(/\s+/).filter(Boolean)[0] ?? "there";
   const { displayed: typedName, done: typingDone } = useTypewriter(firstName);
 
   const activeFilterCount =
-    (status ? 1 : 0) + (dueFilter ? 1 : 0) + (deptFilter ? 1 : 0);
-
-  useEffect(() => {
-    setTab(initialTab);
-  }, [initialTab]);
+    (status && status !== "todo" ? 1 : 0) + (dueFilter ? 1 : 0) + (deptFilter ? 1 : 0) + (assigneeFilter ? 1 : 0);
 
   useEffect(() => {
     if (!token || !showDeptFilter) return;
@@ -121,6 +112,12 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
       .then((r) => r.json())
       .then((j: { data?: IDepartment[] }) => {
         if (j.data) setDepartments(j.data);
+      })
+      .catch(() => {});
+    fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((j: { data?: Pick<IUser, "_id" | "name" | "username" | "avatarUrl">[] }) => {
+        if (j.data) setTeamMembers(j.data);
       })
       .catch(() => {});
   }, [token, showDeptFilter]);
@@ -137,11 +134,10 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
     page,
     total,
   } = useTasks({
-    tab,
     status: status || undefined,
-    userId: user?._id ?? "",
     dueFilter: dueFilter ?? undefined,
     departmentPath: deptFilter || undefined,
+    assigneeId: assigneeFilter || undefined,
     q: search || undefined,
   });
 
@@ -151,22 +147,11 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   }, [searchInput]);
 
   useEffect(() => {
-    document.title = initialTab === "team" ? "Team · TaskFlow" : "TaskFlow";
+    document.title = "TaskFlow";
     hideBackButton();
     const wa = getTelegramWebApp();
     if (wa) wa.setHeaderColor("bg_color");
-  }, [initialTab]);
-
-  useEffect(() => {
-    if (!user) return;
-    if (!showTeamTab && tab !== "my") setTab("my");
-    if (!showAllTab && tab === "all") setTab("my");
-  }, [user, showTeamTab, showAllTab, tab]);
-
-  useEffect(() => {
-    if (!user) return;
-    if (initialTab === "team" && !showTeamTab) router.replace("/");
-  }, [user, initialTab, showTeamTab, router]);
+  }, []);
 
   useEffect(() => {
     const el = loadSentinelRef.current;
@@ -212,7 +197,7 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   }, [token, refetch]);
 
   const grouped = useMemo(() => {
-    if (dueFilter || status) return null;
+    if (dueFilter) return null;
     const today = dayjs().startOf("day");
     const weekEnd = today.add(7, "day");
     const sections: Record<"overdue" | "today" | "week" | "later" | "nodue" | "done", TaskListTask[]> = {
@@ -231,23 +216,15 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   }, [tasks, dueFilter, status]);
 
   const clearFilters = () => {
-    setStatus("");
+    setStatus("todo");
     setDueFilter(null);
     setDeptFilter("");
+    setAssigneeFilter("");
   };
 
   if (!token || !user) return <SignInNotice />;
-  if (initialTab === "team" && !showTeamTab) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--tg-bg)]">
-        <Spinner />
-      </div>
-    );
-  }
 
   const canCreate = hasRole(user.role, "manager");
-  const workspaceLabel =
-    tab === "my" ? "My workspace" : tab === "team" ? "Team queue" : "Full scope";
   const today = dayjs().startOf("day");
   const doneCount = tasks.filter((t) => t.status === "done").length;
   const openCount = Math.max(tasks.length - doneCount, 0);
@@ -261,46 +238,13 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
       <div className="space-y-3 px-3">
         <section className="tf-hero tf-animate-fade-up p-4">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--tg-hint)]">
-              {workspaceLabel}
-            </p>
-            <h1 className="mt-1 truncate text-2xl font-semibold leading-tight">
+            <h1 className="truncate text-2xl font-semibold leading-tight">
               Hi, <span className="tf-brand-text">{typedName}{!typingDone && <span className="animate-pulse font-thin">|</span>}</span>
             </h1>
             <p className="mt-1 text-xs text-[var(--tg-hint)]">
               {total} task{total !== 1 ? "s" : ""} in this view
             </p>
           </div>
-
-          {showTeamTab ? (
-            <div
-              className={clsx(
-                "mt-4 grid gap-2",
-                showAllTab ? "grid-cols-3" : "grid-cols-2",
-              )}
-            >
-              <TabButton
-                active={tab === "my"}
-                disabled={isLoading && tasks.length === 0}
-                onClick={() => setTab("my")}
-                label="My"
-              />
-              <TabButton
-                active={tab === "team"}
-                disabled={isLoading && tasks.length === 0}
-                onClick={() => setTab("team")}
-                label="Team"
-              />
-              {showAllTab ? (
-                <TabButton
-                  active={tab === "all"}
-                  disabled={isLoading && tasks.length === 0}
-                  onClick={() => setTab("all")}
-                  label="All"
-                />
-              ) : null}
-            </div>
-          ) : null}
 
           <div className="tf-stagger mt-4 grid grid-cols-3 gap-2">
             <MetricTile
@@ -430,41 +374,41 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
                     <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">
                       Department
                     </p>
-                    <div className="no-scrollbar flex gap-2 overflow-x-auto">
-                      <button
-                        type="button"
-                        tabIndex={showFilters ? 0 : -1}
-                        onClick={() => {
-                          haptic("light");
-                          setDeptFilter("");
-                        }}
-                        className={clsx(
-                          "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
-                          !deptFilter && "tf-chip-active",
-                        )}
-                      >
-                        All
-                      </button>
-                      {[...departments]
+                    <SearchableSelect
+                      placeholder="All departments"
+                      value={deptFilter}
+                      onChange={setDeptFilter}
+                      tabIndex={showFilters ? 0 : -1}
+                      options={[...departments]
                         .sort((a, b) => a.path.localeCompare(b.path))
-                        .map((d) => (
-                          <button
-                            key={d._id}
-                            type="button"
-                            tabIndex={showFilters ? 0 : -1}
-                            onClick={() => {
-                              haptic("light");
-                              setDeptFilter(deptFilter === d.path ? "" : d.path);
-                            }}
-                            className={clsx(
-                              "tf-chip shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
-                              deptFilter === d.path && "tf-chip-active",
-                            )}
-                          >
-                            {d.name}
-                          </button>
-                        ))}
-                    </div>
+                        .map((d) => ({ value: d.path, label: d.name }))}
+                    />
+                  </div>
+                ) : null}
+
+                {showDeptFilter && teamMembers.length > 0 ? (
+                  <div>
+                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--tg-hint)]">
+                      Employee
+                    </p>
+                    <SearchableSelect
+                      placeholder="All employees"
+                      value={assigneeFilter}
+                      onChange={setAssigneeFilter}
+                      tabIndex={showFilters ? 0 : -1}
+                      options={[...teamMembers]
+                        .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
+                        .map((m) => ({
+                          value: m._id,
+                          label: m.name ?? m.username ?? "?",
+                          prefix: (
+                            <Avatar
+                              user={{ _id: m._id, name: m.name ?? "?", username: m.username, avatarUrl: m.avatarUrl }}
+                              size="xs"
+                            />
+                          ),
+                        }))}
+                    />
                   </div>
                 ) : null}
               </div>
@@ -618,29 +562,6 @@ export function TaskHome({ initialTab = "my" }: TaskHomeProps) {
   );
 }
 
-function TabButton(props: {
-  active: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={props.disabled}
-      onClick={() => { haptic("light"); props.onClick(); }}
-      className={clsx(
-        "min-h-[42px] flex-1 rounded-xl border px-2 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition",
-        props.active
-          ? "border-transparent bg-[var(--tg-button)] text-[var(--tg-button-text)] shadow-[var(--shadow-sm)]"
-          : "border-[var(--tg-border)] bg-[var(--tg-card-bg)] text-[var(--tg-text)]",
-        props.disabled && "opacity-50",
-      )}
-    >
-      {props.label}
-    </button>
-  );
-}
 
 function MetricTile(props: {
   icon: React.ReactNode;
