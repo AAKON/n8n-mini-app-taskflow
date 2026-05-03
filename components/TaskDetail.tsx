@@ -182,7 +182,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
     if (!current || current.status === "done") return;
     const allDone = newSteps.length > 0 && newSteps.every((s) => s.done);
     const anyDone = newSteps.some((s) => s.done);
-    if (allDone && current.status !== "done" && current.status !== "review") {
+    if (allDone && current.status !== "review") {
       void updateTaskStatus("review");
     } else if (anyDone && current.status === "todo") {
       void updateTaskStatus("in_progress");

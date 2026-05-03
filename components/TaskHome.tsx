@@ -213,7 +213,7 @@ export function TaskHome() {
       else sections.later.push(t);
     }
     return sections;
-  }, [tasks, dueFilter, status]);
+  }, [tasks, dueFilter]);
 
   const clearFilters = () => {
     setStatus("todo");
